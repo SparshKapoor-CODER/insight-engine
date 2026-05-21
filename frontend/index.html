@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Insight Engine</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Insight Engine</h1>
+    <p>Upload your CSV or Excel file and get a full analysis report.</p>
+
+    <div class="dropzone" id="dropzone">
+      <p id="dropzone-text">Drag & drop your file here or click to browse</p>
+      <input type="file" id="fileInput" accept=".csv,.xlsx" hidden />
+    </div>
+
+    <button id="uploadBtn" disabled>Generate Report</button>
+
+    <div id="status"></div>
+
+    <div id="download-section" style="display:none;">
+      <a id="download-btn" href="#" target="_blank">⬇ Download Report</a>
+    </div>
+  </div>
+
+  <script>
+    const dropzone     = document.getElementById("dropzone");
+    const fileInput    = document.getElementById("fileInput");
+    const uploadBtn    = document.getElementById("uploadBtn");
+    const status       = document.getElementById("status");
+    const downloadSec  = document.getElementById("download-section");
+    const downloadBtn  = document.getElementById("download-btn");
+    const dropzoneText = document.getElementById("dropzone-text");
+    let selectedFile   = null;
+
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+      selectedFile = e.target.files[0];
+      dropzoneText.textContent = selectedFile.name;
+      uploadBtn.disabled = false;
+      downloadSec.style.display = "none";
+      status.textContent = "";
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+
+      status.textContent = "Analysing your data... this may take a minute.";
+      uploadBtn.disabled = true;
+      downloadSec.style.display = "none";
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      try {
+        const res  = await fetch("/upload", { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (data.report_url) {
+          status.textContent = "✅ Report ready!";
+          downloadBtn.href = data.report_url;
+          downloadSec.style.display = "block";
+        } else {
+          status.textContent = "❌ Error: " + data.error;
+          uploadBtn.disabled = false;
+        }
+      } catch (err) {
+        status.textContent = "❌ Something went wrong. Is the server running?";
+        uploadBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
