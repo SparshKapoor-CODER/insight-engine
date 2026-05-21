@@ -157,11 +157,13 @@ This keeps token usage minimal and costs low.
 
 ---
 
-## Author
+## Contributors
 
-**Sparsh**  
-B.Tech CSE (AI/ML) — VIT Bhopal University  
-[GitHub](https://github.com/Sparsh333) • [Codeforces](https://codeforces.com/profile/Sparsh333)
+Thanks to all the amazing people who contributed to this project ❤️
+
+<a href="https://github.com/SparshKapoor-CODER/GNN_UPI/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=SparshKapoor-CODER/GNN_UPI&max=500&columns=20" />
+</a>
 
 ---
 
