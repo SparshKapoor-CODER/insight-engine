@@ -161,8 +161,8 @@ This keeps token usage minimal and costs low.
 
 Thanks to all the amazing people who contributed to this project ❤️
 
-<a href="https://github.com/SparshKapoor-CODER/GNN_UPI/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=SparshKapoor-CODER/GNN_UPI&max=500&columns=20" />
+<a href="https://github.com/SparshKapoor-CODER/insight-engine/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=SparshKapoor-CODER/insight-engine&max=500&columns=20" />
 </a>
 
 ---
