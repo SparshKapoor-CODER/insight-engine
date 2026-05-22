@@ -114,7 +114,7 @@ def _plot(df, chart, report_id):
 
     filename = f"{report_id}_{chart['chart_id']}.png"
     filepath = os.path.join(CHARTS_PATH, filename)
-    plt.savefig(filepath, dpi=150, bbox_inches="tight",
+    plt.savefig(filepath, dpi=300, bbox_inches="tight",
                 facecolor=BG_FIGURE)
     plt.close()
 

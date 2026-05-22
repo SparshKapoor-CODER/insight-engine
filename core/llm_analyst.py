@@ -42,9 +42,9 @@ Rules you must follow:
 - Your recommendations should be based on the data profile and the charts you suggest
 - Your executive summary should summarize the overall story the data is telling in 5-10 sentences
 - Your key takeaways should be the 5-10 most important insights from the data as short sentences
-- Your growth areas should be 2-4 specific areas where the data shows strong positive trends or untapped potential
-- Your focus areas should be 2-4 specific areas where the data shows weakness, decline, or risk that needs attention
-- Your recommendations should be 3-5 concrete, actionable recommendations the client should act on based on the data
+- Your growth areas should be 6-10 specific areas where the data shows strong positive trends or untapped potential
+- Your focus areas should be 6-10 specific areas where the data shows weakness, decline, or risk that needs attention
+- Your recommendations should be 10-15 concrete, actionable recommendations the client should act on based on the data
 - Your closing summary should be a 10-20 sentence closing paragraph addressed to the client. Summarize the overall
 
 Return ONLY a valid JSON object. No explanation. No markdown. No backticks.
@@ -72,15 +72,15 @@ Return ONLY a valid JSON object. No explanation. No markdown. No backticks.
   ],
 
   "growth_areas": [
-    "2-4 specific areas where the data shows strong positive trends or untapped potential"
+    "6-10 specific areas where the data shows strong positive trends or untapped potential"
   ],
 
   "focus_areas": [
-    "2-4 specific areas where the data shows weakness, decline, or risk that needs attention"
+    "6-10 specific areas where the data shows weakness, decline, or risk that needs attention"
   ],
 
   "recommendations": [
-    "3-5 concrete, actionable recommendations the client should act on based on the data"
+    "10-15 concrete, actionable recommendations the client should act on based on the data"
   ],
 
   "closing_summary": "A 10-20 sentence closing paragraph addressed to the client. Summarize the overall health of their data, what they should prioritize, and what outcome they can expect if they act on the recommendations."
@@ -94,7 +94,7 @@ def analyse(profile: dict) -> dict:
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=2000,
+        max_tokens=3000,
         temperature=0.3
     )
 
