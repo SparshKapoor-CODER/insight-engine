@@ -9,9 +9,9 @@ An automated data storytelling engine. Upload a raw CSV or Excel file and get a 
 1. You upload a `.csv` or `.xlsx` file (up to 10,000 rows)
 2. It profiles the dataset using pandas
 3. Sends the profile to an LLM (Groq / LLaMA) which decides what charts to plot
-4. Python generates the charts using matplotlib + seaborn
-5. Each chart's data is sent back to the LLM for business narration
-6. A clean PDF report is assembled and ready to download
+4. Python generates up to **20 charts** using matplotlib + seaborn
+5. Each chart's data is sent back to the LLM for detailed business narration (10-15 sentences per chart)
+6. A structured PDF report is assembled with a cover page, executive summary, one chart per page, and a full client summary
 
 ---
 
@@ -50,12 +50,14 @@ insight-engine/
 │
 ├── /utils
 │   ├── file_handler.py      # Validates and reads CSV/XLSX into DataFrame
-│   └── data_cleaner.py      # Cleans nulls, fixes dtypes, parses dates
+│   ├── data_cleaner.py      # Cleans nulls, fixes dtypes, parses dates
+│   └── logger.py            # Per-report log file generator
 │
 ├── /storage
 │   ├── /uploads             # Temporary uploaded files
 │   ├── /charts              # Generated PNG charts
-│   └── /reports             # Final PDF reports
+│   ├── /reports             # Final PDF reports
+│   └── /logs                # Per-report logs ({report_id}.log)
 │
 └── /frontend
     ├── index.html           # Dropzone UI
@@ -69,7 +71,7 @@ insight-engine/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/yourname/insight-engine.git
+git clone https://github.com/SparshKapoor-CODER/insight-engine.git
 cd insight-engine
 ```
 
@@ -85,7 +87,7 @@ pip install -r requirements.txt
 GROQ_API_KEY=your-groq-api-key-here
 MODEL_NAME=llama-3.3-70b-versatile
 MAX_ROWS=10000
-MAX_CHARTS=6
+MAX_CHARTS=20
 ```
 
 Get your free Groq API key at [console.groq.com](https://console.groq.com)
@@ -113,7 +115,7 @@ Raw file
   → Pandas profiling → column names + dtypes + stats (text)
       → LLM Call 1 → JSON chart plan (what to plot, which columns, aggregation)
           → Python executes → aggregated data tables (text)
-              → LLM Call 2 per chart → business narration (text)
+              → LLM Call 2 per chart → detailed business narration (10-15 sentences)
                   → PDF assembler → charts (PNG) + narration → final report
 ```
 
@@ -122,6 +124,17 @@ The LLM never sees the raw data or the chart images. It only sees:
 - Small aggregated data tables per chart (Call 2)
 
 This keeps token usage minimal and costs low.
+
+---
+
+## PDF Report Structure
+
+| Page | Content |
+|------|---------|
+| 1 | Cover — title, domain, date |
+| 2 | Executive summary + key takeaways |
+| 3…N | One chart per page — full width image + 10-15 sentence insight |
+| Last | Client summary — growth areas, focus areas, recommendations, closing note |
 
 ---
 
@@ -138,11 +151,30 @@ This keeps token usage minimal and costs low.
 
 ---
 
+## Logging
+
+Every report generates a human-readable log at `storage/logs/{report_id}.log` tracking each stage from upload to download:
+
+```
+[2026-05-21 15:30:01]  Report a3f9b2c1 started.
+[2026-05-21 15:30:01]  File received: sales_data.csv
+[2026-05-21 15:30:02]  File loaded. Shape: 847 rows x 11 columns.
+[2026-05-21 15:30:02]  Data cleaned. Shape after cleaning: 841 rows x 11 columns.
+[2026-05-21 15:30:04]  LLM identified domain as: 'sales'
+[2026-05-21 15:30:04]  LLM suggested 8 charts: Revenue by Region, Monthly Trend...
+[2026-05-21 15:30:12]  All 8 charts generated and saved.
+[2026-05-21 15:30:20]  Narration complete for all 8 charts.
+[2026-05-21 15:30:21]  PDF built successfully.
+[2026-05-21 15:30:21]  Report a3f9b2c1 completed. Ready for download.
+```
+
+---
+
 ## Limitations
 
 - Maximum 10,000 rows per file
 - Works best with clean, structured tabular data
-- Groq free tier has token rate limits — large datasets may slow down narration
+- Groq free tier has token rate limits — reports with many charts may take longer
 - No authentication or multi-user support (single user local tool for now)
 
 ---
