@@ -11,7 +11,7 @@ def narrate(chart_results: list, log=None) -> list:
             log(f"Generating insight for: {chart['title']}")
         insight = _get_insight(chart)
         narrations.append({
-            "chart_id":    chart["chart_id"],
+            "chart_id":     chart["chart_id"],
             "insight_text": insight
         })
     return narrations
@@ -19,11 +19,11 @@ def narrate(chart_results: list, log=None) -> list:
 
 def _get_insight(chart: dict) -> str:
     # Truncate data table to max 20 lines to stay within token limits
-    data_lines     = chart['data_table'].split('\n')[:20]
+    data_lines      = chart['data_table'].split('\n')[:20]
     truncated_table = '\n'.join(data_lines)
 
     prompt = f"""
-You are writing a business report. Below is data from a chart.
+You are a senior business analyst writing a detailed insight section for a client report.
 
 Chart title: {chart['title']}
 Question to answer: {chart['insight_question']}
@@ -31,18 +31,33 @@ Question to answer: {chart['insight_question']}
 Data:
 {truncated_table}
 
-Write 2-3 sentences of business insight based on this data.
+Write a detailed insight paragraph of 10-15 sentences for this chart.
+
 Rules:
-- Be specific, reference actual numbers from the data
-- Bold any important numbers or key terms using **bold** markdown syntax
-- Professional tone, no bullet points, no headers
+- Sentence 1: State the single most important finding with the exact number
+- Sentence 2: Provide context or comparison (second highest, lowest, gap between top and bottom, etc.)
+- Sentence 3: Explain what this pattern likely means for the business
+- Sentence 4: Identify any risk or opportunity this reveals
+- Sentence 5: Dig deeper — what could be causing this pattern?
+- Sentence 6: How does this compare to what a healthy benchmark would look like?
+- Sentence 7: What departments or teams does this most affect?
+- Sentence 8: What happens if this trend continues unchanged for 6-12 months?
+- Sentence 9: Is there a quick win the client can act on immediately?
+- Sentence 10: Suggest one medium-term strategic action (1-3 months)
+- Sentence 11: Suggest one long-term structural change if applicable
+- Sentence 12-15: Any additional context, nuance, or caveats worth noting
+
+Additional rules:
+- Bold any important numbers, percentages, or key terms using **bold** markdown syntax
+- Professional business tone, no bullet points, no headers
 - Do not start with "The chart shows" or "Based on the data"
+- Be specific, use actual numbers from the data, not vague language
 """
 
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=200,
+        max_tokens=850,
         temperature=0.3
     )
 

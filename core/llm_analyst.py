@@ -4,9 +4,10 @@ from config import GROQ_API_KEY, MODEL_NAME, MAX_CHARTS
 
 client = Groq(api_key=GROQ_API_KEY)
 
+
 def build_prompt(profile: dict) -> str:
     return f"""
-You are a senior data analyst. Analyze the dataset profile below and suggest charts for a business report.
+You are a senior data analyst and business consultant. Analyze the dataset profile below and suggest charts and business recommendations for a report.
 
 Dataset Profile:
 ----------------
@@ -15,7 +16,7 @@ Shape: {profile['shape']['rows']} rows x {profile['shape']['columns']} columns
 Columns and types:
 {json.dumps(profile['dtypes'], indent=2)}
 
-Sample data (5 rows):
+Sample data (3 rows):
 {json.dumps(profile['sample'], indent=2)}
 
 Numerical summary:
@@ -36,14 +37,23 @@ Rules you must follow:
 - Do not suggest bar charts if x_column has more than 15 unique values
 - Only suggest scatter plots between two numerical columns
 - datetime columns must go on x_axis in line charts
-- Suggest between 4 and {MAX_CHARTS} charts only
+- Suggest as many charts as you think are relevant, but no more than {MAX_CHARTS}
+- For each chart, also suggest an insight_question that the chart should answer
+- Your recommendations should be based on the data profile and the charts you suggest
+- Your executive summary should summarize the overall story the data is telling in 5-10 sentences
+- Your key takeaways should be the 5-10 most important insights from the data as short sentences
+- Your growth areas should be 2-4 specific areas where the data shows strong positive trends or untapped potential
+- Your focus areas should be 2-4 specific areas where the data shows weakness, decline, or risk that needs attention
+- Your recommendations should be 3-5 concrete, actionable recommendations the client should act on based on the data
+- Your closing summary should be a 10-20 sentence closing paragraph addressed to the client. Summarize the overall
 
 Return ONLY a valid JSON object. No explanation. No markdown. No backticks.
 
 {{
   "domain": "...",
   "report_title": "...",
-  "executive_summary": "...",
+  "executive_summary": "5-10 sentence paragraph summarizing the dataset and its main story.",
+
   "charts": [
     {{
       "chart_id": "chart_1",
@@ -56,9 +66,27 @@ Return ONLY a valid JSON object. No explanation. No markdown. No backticks.
       "insight_question": "..."
     }}
   ],
-  "key_takeaways": ["...", "...", "..."]
+
+  "key_takeaways": [
+    "5-10 most important findings from the data as short sentences"
+  ],
+
+  "growth_areas": [
+    "2-4 specific areas where the data shows strong positive trends or untapped potential"
+  ],
+
+  "focus_areas": [
+    "2-4 specific areas where the data shows weakness, decline, or risk that needs attention"
+  ],
+
+  "recommendations": [
+    "3-5 concrete, actionable recommendations the client should act on based on the data"
+  ],
+
+  "closing_summary": "A 10-20 sentence closing paragraph addressed to the client. Summarize the overall health of their data, what they should prioritize, and what outcome they can expect if they act on the recommendations."
 }}
 """
+
 
 def analyse(profile: dict) -> dict:
     prompt = build_prompt(profile)
@@ -66,7 +94,7 @@ def analyse(profile: dict) -> dict:
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=1500,
+        max_tokens=2000,
         temperature=0.3
     )
 
