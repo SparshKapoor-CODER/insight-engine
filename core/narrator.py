@@ -3,19 +3,23 @@ from config import GROQ_API_KEY, MODEL_NAME
 
 client = Groq(api_key=GROQ_API_KEY)
 
-def narrate(chart_results: list) -> list:
+
+def narrate(chart_results: list, log=None) -> list:
     narrations = []
     for chart in chart_results:
+        if log:
+            log(f"Generating insight for: {chart['title']}")
         insight = _get_insight(chart)
         narrations.append({
-            "chart_id": chart["chart_id"],
+            "chart_id":    chart["chart_id"],
             "insight_text": insight
         })
     return narrations
 
+
 def _get_insight(chart: dict) -> str:
     # Truncate data table to max 20 lines to stay within token limits
-    data_lines = chart['data_table'].split('\n')[:20]
+    data_lines     = chart['data_table'].split('\n')[:20]
     truncated_table = '\n'.join(data_lines)
 
     prompt = f"""
@@ -28,7 +32,11 @@ Data:
 {truncated_table}
 
 Write 2-3 sentences of business insight based on this data.
-Be specific, use the actual numbers. Professional tone. No bullet points.
+Rules:
+- Be specific, reference actual numbers from the data
+- Bold any important numbers or key terms using **bold** markdown syntax
+- Professional tone, no bullet points, no headers
+- Do not start with "The chart shows" or "Based on the data"
 """
 
     response = client.chat.completions.create(
