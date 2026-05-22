@@ -5,3 +5,4 @@ storage/charts/
 storage/reports/
 __pycache__/
 *.pyc
+*.log
