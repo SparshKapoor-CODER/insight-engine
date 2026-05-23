@@ -1,7 +1,8 @@
 import os
+import glob
 import uuid
 from flask import Blueprint, request, jsonify, send_file, send_from_directory
-from config import UPLOAD_PATH
+from config import UPLOAD_PATH, CHARTS_PATH
 from utils.file_handler import load_file
 from utils.data_cleaner import clean
 from utils.logger import get_logger
@@ -26,6 +27,25 @@ def styles():
     return send_from_directory(frontend_path, "style.css")
 
 
+def _cleanup(filepath: str, report_id: str, log) -> None:
+    """Delete uploaded file and chart PNGs after report is built."""
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            log(f"Cleaned up upload: {os.path.basename(filepath)}")
+    except Exception as e:
+        log(f"WARNING: Could not delete upload file: {e}")
+
+    try:
+        pngs = glob.glob(os.path.join(CHARTS_PATH, f"{report_id}_*.png"))
+        for png in pngs:
+            os.remove(png)
+        if pngs:
+            log(f"Cleaned up {len(pngs)} chart PNG(s).")
+    except Exception as e:
+        log(f"WARNING: Could not delete chart PNGs: {e}")
+
+
 @router.route("/upload", methods=["POST"])
 def upload():
     if "file" not in request.files:
@@ -34,6 +54,7 @@ def upload():
     file      = request.files["file"]
     report_id = str(uuid.uuid4())[:8]
     log       = get_logger(report_id)
+    filepath  = None
 
     log(f"Report {report_id} started.")
     log(f"File received: {file.filename}")
@@ -65,6 +86,10 @@ def upload():
 
         pdf_path = build(charts, stories, plan, report_id)
         log(f"PDF built successfully: {pdf_path}")
+
+        # Cleanup uploads and chart PNGs — PDF is all we need now
+        _cleanup(filepath, report_id, log)
+
         log(f"Report {report_id} completed. Ready for download.")
 
         return jsonify({
@@ -76,6 +101,9 @@ def upload():
         import traceback
         traceback.print_exc()
         log(f"ERROR: {str(e)}")
+        # Still attempt cleanup on failure to avoid orphaned files
+        if filepath:
+            _cleanup(filepath, report_id, log)
         return jsonify({"error": str(e)}), 500
 
 
