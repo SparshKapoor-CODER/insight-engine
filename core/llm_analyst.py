@@ -104,9 +104,38 @@ def _call_groq_analyse(prompt: str) -> str:
     return response.choices[0].message.content.strip()
 
 
+def _validate_plan(plan: dict, df_columns: list) -> dict:
+    valid_chart_types = ["bar", "line", "scatter", "histogram", "pie", "box"]
+    valid_aggregations = ["sum", "mean", "count", "max", "min", "none"]
+    valid_charts = []
+
+    for chart in plan["charts"]:
+        try:
+            assert chart["x_column"] in df_columns, \
+                f"x_column '{chart['x_column']}' not in dataset"
+            if chart.get("y_column"):
+                assert chart["y_column"] in df_columns, \
+                    f"y_column '{chart['y_column']}' not in dataset"
+            if chart.get("group_by"):
+                assert chart["group_by"] in df_columns, \
+                    f"group_by '{chart['group_by']}' not in dataset"
+            assert chart["chart_type"] in valid_chart_types, \
+                f"Invalid chart_type '{chart['chart_type']}'"
+            assert chart["aggregation"] in valid_aggregations, \
+                f"Invalid aggregation '{chart['aggregation']}'"
+            valid_charts.append(chart)
+        except AssertionError as e:
+            # Skip invalid chart, don't crash the whole report
+            print(f"Skipping invalid chart '{chart.get('chart_id', '?')}': {e}")
+
+    plan["charts"] = valid_charts
+    return plan
+
+
 def analyse(profile: dict) -> dict:
-    prompt = build_prompt(profile)
-    raw    = _call_groq_analyse(prompt)
+    prompt     = build_prompt(profile)
+    raw        = _call_groq_analyse(prompt)
+    df_columns = profile["columns"]
 
     # Safety strip in case model adds backticks anyway
     if raw.startswith("```"):
@@ -115,4 +144,7 @@ def analyse(profile: dict) -> dict:
             raw = raw[4:]
     raw = raw.strip()
 
-    return json.loads(raw)
+    plan = json.loads(raw)
+    plan = _validate_plan(plan, df_columns)
+
+    return plan
