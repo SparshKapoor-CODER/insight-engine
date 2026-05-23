@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from groq import Groq, APIStatusError, APITimeoutError
 from config import GROQ_API_KEY, MODEL_NAME
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -60,13 +61,18 @@ Additional rules:
 
 
 def narrate(chart_results: list, log=None) -> list:
-    narrations = []
+    if log:
+        log(f"Narrating {len(chart_results)} charts in parallel (max 4 workers).")
+
+    # Log per-chart before firing — can't log mid-parallel easily
     for chart in chart_results:
         if log:
             log(f"Generating insight for: {chart['title']}")
-        insight = _get_insight(chart)
-        narrations.append({
-            "chart_id":     chart["chart_id"],
-            "insight_text": insight
-        })
-    return narrations
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        insights = list(executor.map(_get_insight, chart_results))
+
+    return [
+        {"chart_id": c["chart_id"], "insight_text": i}
+        for c, i in zip(chart_results, insights)
+    ]
