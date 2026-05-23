@@ -6,3 +6,5 @@ storage/reports/
 __pycache__/
 *.pyc
 *.log
+*.zip
+*.csv
