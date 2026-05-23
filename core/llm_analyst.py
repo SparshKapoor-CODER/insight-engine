@@ -1,6 +1,7 @@
 import json
-from groq import Groq
+from groq import Groq, APIStatusError, APITimeoutError
 from config import GROQ_API_KEY, MODEL_NAME, MAX_CHARTS
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -45,7 +46,7 @@ Rules you must follow:
 - Your growth areas should be 6-10 specific areas where the data shows strong positive trends or untapped potential
 - Your focus areas should be 6-10 specific areas where the data shows weakness, decline, or risk that needs attention
 - Your recommendations should be 10-15 concrete, actionable recommendations the client should act on based on the data
-- Your closing summary should be a 10-20 sentence closing paragraph addressed to the client. Summarize the overall
+- Your closing summary should be a 10-20 sentence closing paragraph addressed to the client
 
 Return ONLY a valid JSON object. No explanation. No markdown. No backticks.
 
@@ -88,17 +89,24 @@ Return ONLY a valid JSON object. No explanation. No markdown. No backticks.
 """
 
 
-def analyse(profile: dict) -> dict:
-    prompt = build_prompt(profile)
-
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(min=2, max=10),
+    retry=retry_if_exception_type((APIStatusError, APITimeoutError, json.JSONDecodeError))
+)
+def _call_groq_analyse(prompt: str) -> str:
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=3000,
         temperature=0.3
     )
+    return response.choices[0].message.content.strip()
 
-    raw = response.choices[0].message.content.strip()
+
+def analyse(profile: dict) -> dict:
+    prompt = build_prompt(profile)
+    raw    = _call_groq_analyse(prompt)
 
     # Safety strip in case model adds backticks anyway
     if raw.startswith("```"):

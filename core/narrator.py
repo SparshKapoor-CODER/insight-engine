@@ -1,24 +1,26 @@
-from groq import Groq
+from groq import Groq, APIStatusError, APITimeoutError
 from config import GROQ_API_KEY, MODEL_NAME
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 client = Groq(api_key=GROQ_API_KEY)
 
 
-def narrate(chart_results: list, log=None) -> list:
-    narrations = []
-    for chart in chart_results:
-        if log:
-            log(f"Generating insight for: {chart['title']}")
-        insight = _get_insight(chart)
-        narrations.append({
-            "chart_id":     chart["chart_id"],
-            "insight_text": insight
-        })
-    return narrations
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(min=2, max=10),
+    retry=retry_if_exception_type((APIStatusError, APITimeoutError))
+)
+def _call_groq_narrator(prompt: str) -> str:
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=850,
+        temperature=0.3
+    )
+    return response.choices[0].message.content.strip()
 
 
 def _get_insight(chart: dict) -> str:
-    # Truncate data table to max 20 lines to stay within token limits
     data_lines      = chart['data_table'].split('\n')[:20]
     truncated_table = '\n'.join(data_lines)
 
@@ -54,11 +56,17 @@ Additional rules:
 - Be specific, use actual numbers from the data, not vague language
 """
 
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=850,
-        temperature=0.3
-    )
+    return _call_groq_narrator(prompt)
 
-    return response.choices[0].message.content.strip()
+
+def narrate(chart_results: list, log=None) -> list:
+    narrations = []
+    for chart in chart_results:
+        if log:
+            log(f"Generating insight for: {chart['title']}")
+        insight = _get_insight(chart)
+        narrations.append({
+            "chart_id":     chart["chart_id"],
+            "insight_text": insight
+        })
+    return narrations
