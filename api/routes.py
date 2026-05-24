@@ -201,8 +201,6 @@ def upload():
         return _error("INTERNAL_ERROR", "Something went wrong. Please try again.", report_id)
 
 
-
-
 # ── Report download ───────────────────────────────────────────────────────────
 @router.route("/report/<report_id>")
 @login_required
