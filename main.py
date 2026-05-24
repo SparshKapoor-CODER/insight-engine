@@ -18,13 +18,13 @@ app.register_blueprint(auth)
 app.register_blueprint(google_bp, url_prefix="/auth/google")
 app.register_blueprint(github_bp, url_prefix="/auth/github")
 
-# ✅ Debug route – MUST be after all blueprints are registered
+# Debug route – ONLY here, not in routes.py
 @app.route("/debug/routes")
 def debug_routes():
     routes = []
     for rule in app.url_map.iter_rules():
         routes.append(f"{rule.endpoint} -> {rule.rule}")
-    return "<br>".join(routes)
+    return "<br>".join(sorted(routes))
 
 if __name__ == "__main__":
     app.run(debug=DEBUG, port=5000)
