@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from api.routes import router
-from auth import auth, google_bp, github_bp
+from api.auth import auth, google_bp, github_bp
 from config import DEBUG, BASE_DIR
 
 # Create storage folders if they don't exist
