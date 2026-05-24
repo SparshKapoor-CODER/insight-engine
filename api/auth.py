@@ -2,10 +2,11 @@ import os
 from flask import Blueprint, redirect, session
 from flask_dance.contrib.google import make_google_blueprint, google
 from flask_dance.contrib.github import make_github_blueprint, github
+from flask_dance.consumer import oauth_authorized
 from flask_login import login_user, logout_user, login_required
 from models.database import db, User
 
-# ── Google OAuth blueprint (no redirect_url needed – Flask-Dance uses default /authorized)
+# ── Google OAuth blueprint – no custom routes ───────────────────
 google_bp = make_google_blueprint(
     client_id=os.getenv("GOOGLE_CLIENT_ID"),
     client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
@@ -13,7 +14,7 @@ google_bp = make_google_blueprint(
            "https://www.googleapis.com/auth/userinfo.profile"]
 )
 
-# ── GitHub OAuth blueprint
+# ── GitHub OAuth blueprint – no custom routes ───────────────────
 github_bp = make_github_blueprint(
     client_id=os.getenv("GITHUB_CLIENT_ID"),
     client_secret=os.getenv("GITHUB_CLIENT_SECRET"),
@@ -22,15 +23,15 @@ github_bp = make_github_blueprint(
 
 auth = Blueprint("auth", __name__)
 
-# Google callback – Flask-Dance will call this after OAuth
-@google_bp.route("/authorized")
-def google_authorized():
-    if not google.authorized:
-        return redirect("/login?error=unauthorized")
+# ── Handle Google OAuth callback via signal ─────────────────────
+@oauth_authorized.connect_via(google_bp)
+def google_logged_in(blueprint, token):
+    if not token:
+        return False
 
     resp = google.get("/oauth2/v2/userinfo")
     if not resp.ok:
-        return redirect("/login?error=google_failed")
+        return False
 
     info = resp.json()
     email = info.get("email")
@@ -51,24 +52,23 @@ def google_authorized():
         db.session.commit()
 
     login_user(user)
-    return redirect("/dashboard")
+    return False  # let Flask-Dance continue the normal redirect
 
-# GitHub callback
-@github_bp.route("/authorized")
-def github_authorized():
-    if not github.authorized:
-        return redirect("/login?error=unauthorized")
+# ── Handle GitHub OAuth callback via signal ─────────────────────
+@oauth_authorized.connect_via(github_bp)
+def github_logged_in(blueprint, token):
+    if not token:
+        return False
 
     resp = github.get("/user")
     if not resp.ok:
-        return redirect("/login?error=github_failed")
+        return False
 
     info = resp.json()
     name = info.get("name") or info.get("login")
     avatar_url = info.get("avatar_url", "")
     provider_id = str(info.get("id"))
 
-    # Get email (GitHub may not provide it in the primary request)
     email = info.get("email")
     if not email:
         emails_resp = github.get("/user/emails")
@@ -90,9 +90,9 @@ def github_authorized():
         db.session.commit()
 
     login_user(user)
-    return redirect("/dashboard")
+    return False
 
-# Logout
+# ── Logout route ─────────────────────────────────────────────────
 @auth.route("/logout")
 @login_required
 def logout():
