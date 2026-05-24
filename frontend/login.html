@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — Insight Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <style>
+    /* Auth page specific – centred card */
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--paper);
+      position: relative;
+      z-index: 2;
+      padding: 24px;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+      animation: card-enter 0.5s var(--ease) both;
+    }
+
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-logo {
+      margin-bottom: 32px;
+    }
+
+    .auth-logo .logo-icon {
+      display: inline-flex;
+      margin-bottom: 12px;
+    }
+
+    .auth-logo h1 {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .auth-logo p {
+      color: var(--ink-2);
+      font-size: 0.85rem;
+    }
+
+    .auth-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .oauth-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background var(--dur) var(--ease), transform 0.15s var(--ease);
+      border: 1px solid var(--border);
+    }
+
+    .oauth-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .google-btn {
+      background: #ffffff;
+      color: #1f1f1f;
+      border-color: var(--border-strong);
+    }
+
+    .google-btn:hover {
+      background: #f8f8f8;
+    }
+
+    .github-btn {
+      background: var(--ink);
+      color: white;
+      border-color: var(--ink);
+    }
+
+    .github-btn:hover {
+      background: #2c2823;
+    }
+
+    .auth-note {
+      font-size: 0.75rem;
+      color: var(--ink-3);
+      letter-spacing: 0.02em;
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: var(--ink-3);
+      font-size: 0.7rem;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient orbs -->
+  <div class="bg-orb bg-orb--1" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb--2" aria-hidden="true"></div>
+  <div class="bg-orb bg-orb--3" aria-hidden="true"></div>
+
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="logo-icon">
+          <svg width="42" height="42" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="14" width="5" height="12" rx="2" fill="var(--accent)"/>
+            <rect x="10" y="8" width="5" height="18" rx="2" fill="var(--accent)" opacity="0.7"/>
+            <rect x="18" y="2" width="5" height="24" rx="2" fill="var(--accent)" opacity="0.4"/>
+            <circle cx="21" cy="2" r="3" fill="var(--accent-vivid)"/>
+          </svg>
+        </div>
+        <h1>Insight Engine</h1>
+        <p>Turn raw data into business intelligence</p>
+      </div>
+
+      <div class="auth-buttons">
+        <a href="/auth/google/login" class="oauth-btn google-btn">
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Continue with Google
+        </a>
+
+        <a href="/auth/github/login" class="oauth-btn github-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          Continue with GitHub
+        </a>
+      </div>
+
+      <div class="auth-divider">
+        <span>Free tier includes 3 reports per month</span>
+      </div>
+
+      <p class="auth-note">No credit card required — get started instantly.</p>
+    </div>
+  </div>
+</body>
+</html>
