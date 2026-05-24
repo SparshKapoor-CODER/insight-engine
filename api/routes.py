@@ -51,14 +51,14 @@ def _cleanup(filepath: str, report_id: str, log) -> None:
 # ── Frontend routes ───────────────────────────────────────────────────────────
 @router.route("/")
 def index():
-    frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-    return send_from_directory(frontend_path, "index.html")
+    frontend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+    return send_from_directory(os.path.abspath(frontend_path), "index.html")
 
 
 @router.route("/style.css")
 def styles():
-    frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-    return send_from_directory(frontend_path, "style.css")
+    frontend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+    return send_from_directory(os.path.abspath(frontend_path), "style.css")
 
 
 # ── Upload route ──────────────────────────────────────────────────────────────
