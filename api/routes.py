@@ -200,6 +200,13 @@ def upload():
                           "API rate limit hit. Please wait and try again.", report_id)
         return _error("INTERNAL_ERROR", "Something went wrong. Please try again.", report_id)
 
+@app.route("/debug/routes")
+def debug_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append(f"{rule.endpoint} -> {rule.rule}")
+    return "<br>".join(routes)
+
 
 # ── Report download ───────────────────────────────────────────────────────────
 @router.route("/report/<report_id>")
