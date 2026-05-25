@@ -12,20 +12,27 @@ class User(UserMixin, db.Model):
     email       = db.Column(db.String(255), unique=True, nullable=False)
     name        = db.Column(db.String(255))
     avatar_url  = db.Column(db.String(500))
-    provider    = db.Column(db.String(20))   # 'google' or 'github'
+    provider    = db.Column(db.String(20))
     provider_id = db.Column(db.String(100))
     tier        = db.Column(db.String(20), default="free")
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-
     reports     = db.relationship("Report", backref="user", lazy=True)
 
     def reports_this_month(self):
-        from datetime import timedelta
         now   = datetime.utcnow()
         start = now.replace(day=1, hour=0, minute=0, second=0)
         return Report.query.filter_by(user_id=self.id).filter(
             Report.created_at >= start
         ).count()
+
+
+class OAuthToken(db.Model):
+    __tablename__ = "oauth_tokens"
+
+    id            = db.Column(db.Integer, primary_key=True)
+    provider      = db.Column(db.String(20), nullable=False)
+    token         = db.Column(db.Text, nullable=False)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class Report(db.Model):
