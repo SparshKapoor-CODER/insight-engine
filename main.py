@@ -33,8 +33,8 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # ── Blueprints ────────────────────────────────────────────────────────────────
-app.register_blueprint(google_bp, url_prefix="/auth/google")
-app.register_blueprint(github_bp, url_prefix="/auth/github")
+app.register_blueprint(google_bp, url_prefix="/auth")
+app.register_blueprint(github_bp, url_prefix="/auth")
 app.register_blueprint(auth)
 app.register_blueprint(router)
 
