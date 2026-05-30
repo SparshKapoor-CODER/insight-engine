@@ -194,7 +194,7 @@ Every report generates a human-readable log at `storage/logs/{report_id}.log` tr
 Thanks to all the amazing people who contributed to this project ❤️
 
 <a href="https://github.com/SparshKapoor-CODER/insight-engine/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=SparshKapoor-CODER/insight-engine&max=500&columns=20" />
+  <img src="https://contrib.rocks/image?repo=SparshKapoor-CODER/insight-engine" />
 </a>
 
 ---
