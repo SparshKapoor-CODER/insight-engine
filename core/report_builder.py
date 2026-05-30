@@ -1,3 +1,4 @@
+import io
 import os
 import re
 from datetime import datetime
@@ -11,7 +12,7 @@ from reportlab.platypus import (
 )
 from config import REPORTS_PATH
 
-# ── Brand colors ─────────────────────────────────────────────────────────────
+# ── Brand colors ────────────────────────────────────────────────────────────
 C_DARK       = colors.HexColor("#0f172a")
 C_PRIMARY    = colors.HexColor("#2563eb")
 C_SECONDARY  = colors.HexColor("#475569")
@@ -28,7 +29,7 @@ C_DIVIDER    = colors.HexColor("#e2e8f0")
 C_COVER_BG   = colors.HexColor("#1e3a5f")
 
 
-# ── Style definitions ─────────────────────────────────────────────────────────
+# ── Style definitions ────────────────────────────────────────────────────────
 def _make_styles():
     cover_title = ParagraphStyle(
         "cover_title",
@@ -75,18 +76,18 @@ def _make_styles():
     )
 
     return {
-        "cover_title":    cover_title,
-        "cover_sub":      cover_sub,
+        "cover_title":     cover_title,
+        "cover_sub":       cover_sub,
         "section_heading": section_heading,
-        "body":           body,
-        "chart_title":    chart_title,
-        "chart_insight":  chart_insight,
-        "page_label":     page_label,
-        "closing":        closing,
+        "body":            body,
+        "chart_title":     chart_title,
+        "chart_insight":   chart_insight,
+        "page_label":      page_label,
+        "closing":         closing,
     }
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Helpers ──────────────────────────────────────────────────────────────────
 def _md_to_rl(text: str, style: ParagraphStyle) -> Paragraph:
     """Convert **bold** markdown to ReportLab <b> tags."""
     converted = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
@@ -98,9 +99,9 @@ def _callout_box(text: str, style: ParagraphStyle,
                  prefix: str = ""):
     """Generic styled callout box."""
     converted = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
-    content = f"{prefix}{converted}" if prefix else converted
-    data = [[Paragraph(content, style)]]
-    t = Table(data, colWidths=[6.2 * inch])
+    content   = f"{prefix}{converted}" if prefix else converted
+    data      = [[Paragraph(content, style)]]
+    t         = Table(data, colWidths=[6.2 * inch])
     t.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, -1), bg),
         ("LEFTPADDING",   (0, 0), (-1, -1), 14),
@@ -114,7 +115,7 @@ def _callout_box(text: str, style: ParagraphStyle,
 
 # ── Cover page ────────────────────────────────────────────────────────────────
 def _cover_page(story: list, plan: dict, styles: dict):
-    cover_data = [[Paragraph(plan["report_title"], styles["cover_title"])]]
+    cover_data  = [[Paragraph(plan["report_title"], styles["cover_title"])]]
     cover_table = Table(cover_data, colWidths=[6.5 * inch])
     cover_table.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, -1), C_COVER_BG),
@@ -156,14 +157,12 @@ def _chart_pages(story: list, chart_results: list,
     story.append(HRFlowable(width="100%", thickness=1, color=C_DIVIDER, spaceAfter=10))
 
     for i, chart in enumerate(chart_results):
-        # Chart number + title
         story.append(Paragraph(f"Chart {i + 1} of {len(chart_results)}", styles["page_label"]))
         story.append(Paragraph(chart["title"], styles["chart_title"]))
         story.append(Spacer(1, 0.1 * inch))
 
-        # Full-width chart image
-        img = Image(chart["png_path"], width=6.5 * inch, height=3.5 * inch)
-        img_data = [[img]]
+        img       = Image(chart["png_path"], width=6.5 * inch, height=3.5 * inch)
+        img_data  = [[img]]
         img_table = Table(img_data, colWidths=[6.5 * inch])
         img_table.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
@@ -176,13 +175,11 @@ def _chart_pages(story: list, chart_results: list,
         story.append(img_table)
         story.append(Spacer(1, 0.18 * inch))
 
-        # Detailed insight
         story.append(Paragraph("Insight", styles["section_heading"]))
         story.append(HRFlowable(width="100%", thickness=0.5, color=C_DIVIDER, spaceAfter=6))
         insight = narration_map.get(chart["chart_id"], "")
         story.append(_md_to_rl(insight, styles["chart_insight"]))
 
-        # Page break after every chart except the last
         if i < len(chart_results) - 1:
             story.append(PageBreak())
 
@@ -193,7 +190,6 @@ def _client_summary_page(story: list, plan: dict, styles: dict):
     story.append(Paragraph("Client Summary", styles["section_heading"]))
     story.append(HRFlowable(width="100%", thickness=1, color=C_DIVIDER, spaceAfter=10))
 
-    # Growth areas — green
     story.append(Paragraph("Areas of Growth", styles["section_heading"]))
     for point in plan.get("growth_areas", []):
         story.append(_callout_box(point, styles["body"], C_GREEN_BG, C_GREEN_BOR, "📈  "))
@@ -201,7 +197,6 @@ def _client_summary_page(story: list, plan: dict, styles: dict):
 
     story.append(Spacer(1, 0.15 * inch))
 
-    # Focus areas — orange
     story.append(Paragraph("Areas to Focus On", styles["section_heading"]))
     for point in plan.get("focus_areas", []):
         story.append(_callout_box(point, styles["body"], C_ORANGE_BG, C_ORANGE_BOR, "⚠️  "))
@@ -209,7 +204,6 @@ def _client_summary_page(story: list, plan: dict, styles: dict):
 
     story.append(Spacer(1, 0.15 * inch))
 
-    # Recommendations — purple
     story.append(Paragraph("Recommendations", styles["section_heading"]))
     for i, rec in enumerate(plan.get("recommendations", []), 1):
         story.append(_callout_box(rec, styles["body"], C_PURPLE_BG, C_PURPLE_BOR, f"{i}.  "))
@@ -217,10 +211,9 @@ def _client_summary_page(story: list, plan: dict, styles: dict):
 
     story.append(Spacer(1, 0.25 * inch))
 
-    # Closing summary — dark box
     story.append(Paragraph("Closing Note", styles["section_heading"]))
     story.append(HRFlowable(width="100%", thickness=1, color=C_DIVIDER, spaceAfter=8))
-    closing_text = plan.get("closing_summary", "")
+    closing_text  = plan.get("closing_summary", "")
     closing_style = ParagraphStyle(
         "closing_inner",
         fontSize=10, fontName="Helvetica",
@@ -231,6 +224,31 @@ def _client_summary_page(story: list, plan: dict, styles: dict):
         closing_text, closing_style,
         colors.HexColor("#eff6ff"), colors.HexColor("#93c5fd")
     ))
+
+
+# ── Change 4: helper to persist PDF bytes into the DB ────────────────────────
+def store_pdf_in_db(report_id: str, pdf_path: str) -> None:
+    """
+    Read the PDF from disk and store it as a BLOB on the matching Report row.
+
+    This is called *after* the PDF has been written to disk, so the disk copy
+    acts as a fast local cache while the DB copy survives dyno restarts.
+
+    Import is deferred to avoid circular imports at module load time.
+    """
+    try:
+        from models.database import db, Report  # deferred import
+
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+        report = Report.query.get(report_id)
+        if report:
+            report.pdf_data = pdf_bytes
+            db.session.commit()
+    except Exception as e:
+        # Non-fatal — disk copy is still available if DB write fails
+        print(f"WARNING: Could not store PDF BLOB for {report_id}: {e}")
 
 
 # ── Main build ────────────────────────────────────────────────────────────────
@@ -253,4 +271,8 @@ def build(chart_results: list, narrations: list, plan: dict, report_id: str) -> 
     _client_summary_page(story, plan, styles)
 
     doc.build(story)
+
+    # Change 4: persist to DB so the file survives ephemeral filesystem resets
+    store_pdf_in_db(report_id, output_path)
+
     return output_path

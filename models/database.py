@@ -29,10 +29,22 @@ class User(UserMixin, db.Model):
 class OAuthToken(db.Model):
     __tablename__ = "oauth_tokens"
 
-    id            = db.Column(db.Integer, primary_key=True)
-    provider      = db.Column(db.String(20), nullable=False)
-    token         = db.Column(db.Text, nullable=False)
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    id         = db.Column(db.Integer, primary_key=True)
+    # Change 3: link every token row to the owning user
+    user_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    provider   = db.Column(db.String(20), nullable=False)
+    token      = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    # Convenience back-reference
+    user = db.relationship("User", backref=db.backref("oauth_tokens", lazy=True))
+
+    __table_args__ = (
+        # Enforce at most one token row per (user, provider) pair
+        db.UniqueConstraint("user_id", "provider", name="uq_oauth_user_provider"),
+    )
 
 
 class Report(db.Model):
@@ -45,3 +57,5 @@ class Report(db.Model):
     domain     = db.Column(db.String(100))
     status     = db.Column(db.String(20), default="completed")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Change 4: persist PDF bytes in the DB so reports survive dyno restarts
+    pdf_data   = db.Column(db.LargeBinary, nullable=True)

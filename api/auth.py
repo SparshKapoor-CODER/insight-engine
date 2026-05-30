@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Blueprint, redirect, session
+from flask import Blueprint, redirect, session, url_for
 from flask_dance.contrib.google import make_google_blueprint, google
 from flask_dance.contrib.github import make_github_blueprint, github
 from flask_dance.consumer import oauth_authorized
@@ -64,11 +64,19 @@ def _upsert_token(user: User, provider: str, token: dict) -> None:
 @oauth_authorized.connect_via(google_bp)
 def google_logged_in(blueprint, token):
     if not token:
+<<<<<<< HEAD
         return redirect("/login")
 
     resp = blueprint.session.get("/oauth2/v2/userinfo")
     if not resp.ok:
         return redirect("/login")
+=======
+        return redirect('/login')  # Redirect to login on error
+
+    resp = blueprint.session.get("/oauth2/v2/userinfo")
+    if not resp.ok:
+        return redirect('/login')
+>>>>>>> 2f4353a572dc9d166bc0c6d79049f4dfb654f2f1
 
     info        = resp.json()
     email       = info.get("email")
@@ -84,6 +92,7 @@ def google_logged_in(blueprint, token):
         db.session.commit()
 
     login_user(user)
+<<<<<<< HEAD
 
     # Change 3: upsert token linked to the now-authenticated user
     _upsert_token(user, "google", token)
@@ -100,6 +109,18 @@ def github_logged_in(blueprint, token):
     resp = blueprint.session.get("/user")
     if not resp.ok:
         return redirect("/login")
+=======
+    return redirect('/dashboard')  # This is the key fix
+# ── GitHub authorized signal ──────────────────────────────────────────────────
+@oauth_authorized.connect_via(github_bp)
+def github_logged_in(blueprint, token):
+    if not token:
+        return redirect('/login')
+
+    resp = blueprint.session.get("/user")
+    if not resp.ok:
+        return redirect('/login')
+>>>>>>> 2f4353a572dc9d166bc0c6d79049f4dfb654f2f1
 
     info        = resp.json()
     name        = info.get("name") or info.get("login")
@@ -122,12 +143,16 @@ def github_logged_in(blueprint, token):
         db.session.commit()
 
     login_user(user)
+<<<<<<< HEAD
 
     # Change 3: upsert token linked to the now-authenticated user
     _upsert_token(user, "github", token)
 
     return redirect("/dashboard")
 
+=======
+    return redirect('/dashboard')  # This is the key fix
+>>>>>>> 2f4353a572dc9d166bc0c6d79049f4dfb654f2f1
 
 # ── Logout ─────────────────────────────────────────────────────────────────
 @auth.route("/logout")

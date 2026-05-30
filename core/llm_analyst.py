@@ -26,7 +26,7 @@ Numerical summary:
 Null counts:
 {json.dumps(profile.get('null_counts', {}), indent=2)}
 
-Categorical columns (unique counts and top values):
+Categorical columns (unique counts, top values, and average label length of top-10 values):
 {json.dumps(profile.get('cardinality', {}), indent=2)}
 ----------------
 
@@ -36,6 +36,7 @@ Rules you must follow:
 - aggregation must be one of: sum, mean, count, max, min, none
 - Do not suggest pie charts if a column has more than 6 unique values
 - Do not suggest bar charts if x_column has more than 15 unique values
+- Do not suggest bar or line charts if the avg_label_length of x_column's top-10 values (shown in the cardinality section above) exceeds 20 characters
 - Only suggest scatter plots between two numerical columns
 - datetime columns must go on x_axis in line charts
 - Suggest as many charts as you think are relevant, but no more than {MAX_CHARTS}
@@ -105,9 +106,9 @@ def _call_groq_analyse(prompt: str) -> str:
 
 
 def _validate_plan(plan: dict, df_columns: list) -> dict:
-    valid_chart_types = ["bar", "line", "scatter", "histogram", "pie", "box"]
+    valid_chart_types  = ["bar", "line", "scatter", "histogram", "pie", "box"]
     valid_aggregations = ["sum", "mean", "count", "max", "min", "none"]
-    valid_charts = []
+    valid_charts       = []
 
     for chart in plan["charts"]:
         try:
