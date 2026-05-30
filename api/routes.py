@@ -1,3 +1,4 @@
+import io
 import os
 import glob
 import uuid
@@ -26,7 +27,7 @@ def _error(code, message, report_id=None, status=500):
     return jsonify(payload), status
 
 
-# ── Cleanup helper ────────────────────────────────────────────────────────────
+# ── Cleanup helper ─────────────────────────────────────────────────────────────
 def _cleanup(filepath, report_id, log):
     try:
         if filepath and os.path.exists(filepath):
@@ -44,7 +45,7 @@ def _cleanup(filepath, report_id, log):
         log(f"WARNING: Could not delete PNGs: {e}")
 
 
-# ── Frontend pages ────────────────────────────────────────────────────────────
+# ── Frontend pages ─────────────────────────────────────────────────────────────
 @router.route("/")
 def index():
     frontend_path = os.path.join(
@@ -74,7 +75,7 @@ def styles():
     return send_from_directory(os.path.abspath(frontend_path), "style.css")
 
 
-# ── User info API ─────────────────────────────────────────────────────────────
+# ── User info API ──────────────────────────────────────────────────────────────
 @router.route("/api/me")
 @login_required
 def me():
@@ -102,13 +103,13 @@ def me():
     })
 
 
-# ── Health check ──────────────────────────────────────────────────────────────
+# ── Health check ───────────────────────────────────────────────────────────────
 @router.route("/health")
 def health():
     return jsonify({"status": "ok"}), 200
 
 
-# ── Upload route ──────────────────────────────────────────────────────────────
+# ── Upload route ───────────────────────────────────────────────────────────────
 @router.route("/upload", methods=["POST"])
 @login_required
 def upload():
@@ -156,8 +157,8 @@ def upload():
         log(f"LLM domain: '{plan['domain']}' | Title: '{plan['report_title']}'")
         log(f"Charts: {', '.join([c['title'] for c in plan['charts']])}")
 
-        charts  = generate_charts(df, plan, report_id, log)
-        stories = narrate(charts, log)
+        charts   = generate_charts(df, plan, report_id, log)
+        stories  = narrate(charts, log)
         pdf_path = build(charts, stories, plan, report_id)
         log(f"PDF built: {pdf_path}")
 
@@ -201,7 +202,7 @@ def upload():
         return _error("INTERNAL_ERROR", "Something went wrong. Please try again.", report_id)
 
 
-# ── Report download ───────────────────────────────────────────────────────────
+# ── Report download ────────────────────────────────────────────────────────────
 @router.route("/report/<report_id>")
 @login_required
 def get_report(report_id):
@@ -214,14 +215,27 @@ def get_report(report_id):
     if not report:
         return _error("NOT_FOUND", "Report not found.", status=404)
 
-    path = os.path.join(REPORTS_PATH, f"{report_id}.pdf")
-    if not os.path.exists(path):
-        return _error("NOT_FOUND", "Report file not found.", status=404)
+    # Change 4: try disk first (fast cache), fall back to DB BLOB
+    disk_path = os.path.join(REPORTS_PATH, f"{report_id}.pdf")
 
-    return send_file(path, as_attachment=True)
+    if os.path.exists(disk_path):
+        return send_file(disk_path, as_attachment=True,
+                         download_name=f"{report_id}.pdf",
+                         mimetype="application/pdf")
+
+    # Disk file missing (e.g. after a dyno restart) — serve from DB BLOB
+    if report.pdf_data:
+        return send_file(
+            io.BytesIO(report.pdf_data),
+            as_attachment=True,
+            download_name=f"{report_id}.pdf",
+            mimetype="application/pdf"
+        )
+
+    return _error("NOT_FOUND", "Report file not found.", status=404)
 
 
-# ── Log viewer ────────────────────────────────────────────────────────────────
+# ── Log viewer ─────────────────────────────────────────────────────────────────
 @router.route("/logs/<report_id>")
 @login_required
 def get_log(report_id):
