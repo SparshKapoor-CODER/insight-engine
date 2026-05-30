@@ -1,45 +1,50 @@
 import os
 import json
-from flask import Blueprint, redirect, session, url_for
-from flask_dance.contrib.google import make_google_blueprint, google
-from flask_dance.contrib.github import make_github_blueprint, github
+from flask import Blueprint, redirect, session
+from flask_dance.contrib.google import make_google_blueprint
+from flask_dance.contrib.github import make_github_blueprint
 from flask_dance.consumer import oauth_authorized
-from flask_dance.consumer.storage.sqla import SQLAlchemyStorage
 from flask_login import login_user, logout_user, login_required, current_user
 from models.database import db, User, OAuthToken
+from datetime import datetime
 
-# ── OAuth blueprints with DB token storage ─────────────────────────────────
+# ── OAuth blueprints ───────────────────────────────────────────────────────
+# We intentionally do NOT pass storage=SQLAlchemyStorage here.
+# Flask-dance's default session-based storage is used for the OAuth handshake;
+# we persist tokens ourselves in _upsert_token() after login_user() so we
+# always have a valid user.id to link against. This avoids orphaned NULL-user
+# token rows that SQLAlchemyStorage creates when user_required=False.
 google_bp = make_google_blueprint(
     client_id     = os.getenv("GOOGLE_CLIENT_ID"),
     client_secret = os.getenv("GOOGLE_CLIENT_SECRET"),
     scope         = ["openid",
                      "https://www.googleapis.com/auth/userinfo.email",
                      "https://www.googleapis.com/auth/userinfo.profile"],
-    storage       = SQLAlchemyStorage(OAuthToken, db.session, user=current_user,
-                                      user_required=False)
 )
 
 github_bp = make_github_blueprint(
     client_id     = os.getenv("GITHUB_CLIENT_ID"),
     client_secret = os.getenv("GITHUB_CLIENT_SECRET"),
     scope         = "user:email",
-    storage       = SQLAlchemyStorage(OAuthToken, db.session, user=current_user,
-                                      user_required=False)
 )
 
 auth = Blueprint("auth", __name__)
 
 
 # ── Helper: upsert a token row linked to a user ────────────────────────────
-def _upsert_token(user: User, provider: str, token: dict) -> None:
+def _upsert_token(user, provider, token):
     """
     Change 3 — keep exactly one OAuthToken row per (user, provider).
 
-    If a row already exists for this user + provider, update its token text.
-    If no row exists, create one.  Uses SQLAlchemy only — no raw SQL.
+    Checks whether a row already exists for this user + provider:
+      - If yes  -> update the token text and bump updated_at
+      - If no   -> insert a new row
+
+    Uses SQLAlchemy only - no raw SQL.
+    Because this is called *after* login_user(), user.id is always valid
+    and we never create orphaned NULL-user rows.
     """
-    token_str   = json.dumps(token)
-    from datetime import datetime
+    token_str = json.dumps(token)
 
     existing = OAuthToken.query.filter_by(
         user_id  = user.id,
@@ -50,12 +55,11 @@ def _upsert_token(user: User, provider: str, token: dict) -> None:
         existing.token      = token_str
         existing.updated_at = datetime.utcnow()
     else:
-        new_token = OAuthToken(
+        db.session.add(OAuthToken(
             user_id  = user.id,
             provider = provider,
             token    = token_str
-        )
-        db.session.add(new_token)
+        ))
 
     db.session.commit()
 
@@ -64,19 +68,11 @@ def _upsert_token(user: User, provider: str, token: dict) -> None:
 @oauth_authorized.connect_via(google_bp)
 def google_logged_in(blueprint, token):
     if not token:
-<<<<<<< HEAD
         return redirect("/login")
 
     resp = blueprint.session.get("/oauth2/v2/userinfo")
     if not resp.ok:
         return redirect("/login")
-=======
-        return redirect('/login')  # Redirect to login on error
-
-    resp = blueprint.session.get("/oauth2/v2/userinfo")
-    if not resp.ok:
-        return redirect('/login')
->>>>>>> 2f4353a572dc9d166bc0c6d79049f4dfb654f2f1
 
     info        = resp.json()
     email       = info.get("email")
@@ -92,9 +88,8 @@ def google_logged_in(blueprint, token):
         db.session.commit()
 
     login_user(user)
-<<<<<<< HEAD
 
-    # Change 3: upsert token linked to the now-authenticated user
+    # Change 3: upsert token - user.id is now set so no NULL rows
     _upsert_token(user, "google", token)
 
     return redirect("/dashboard")
@@ -109,18 +104,6 @@ def github_logged_in(blueprint, token):
     resp = blueprint.session.get("/user")
     if not resp.ok:
         return redirect("/login")
-=======
-    return redirect('/dashboard')  # This is the key fix
-# ── GitHub authorized signal ──────────────────────────────────────────────────
-@oauth_authorized.connect_via(github_bp)
-def github_logged_in(blueprint, token):
-    if not token:
-        return redirect('/login')
-
-    resp = blueprint.session.get("/user")
-    if not resp.ok:
-        return redirect('/login')
->>>>>>> 2f4353a572dc9d166bc0c6d79049f4dfb654f2f1
 
     info        = resp.json()
     name        = info.get("name") or info.get("login")
@@ -143,16 +126,12 @@ def github_logged_in(blueprint, token):
         db.session.commit()
 
     login_user(user)
-<<<<<<< HEAD
 
-    # Change 3: upsert token linked to the now-authenticated user
+    # Change 3: upsert token - user.id is now set so no NULL rows
     _upsert_token(user, "github", token)
 
     return redirect("/dashboard")
 
-=======
-    return redirect('/dashboard')  # This is the key fix
->>>>>>> 2f4353a572dc9d166bc0c6d79049f4dfb654f2f1
 
 # ── Logout ─────────────────────────────────────────────────────────────────
 @auth.route("/logout")
