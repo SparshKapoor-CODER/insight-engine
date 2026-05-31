@@ -561,16 +561,32 @@
         document.getElementById("usage-fill").style.width    = `${Math.min((used / limit) * 100, 100)}%`;
 
         if (data.reports && data.reports.length > 0) {
-          const list = data.reports.map(r => `
-            <div class="report-row">
-              <div>
-                <div class="report-title">${escapeHtml(r.title)}</div>
-                <div class="report-meta">${escapeHtml(r.filename)} • ${escapeHtml(r.domain)} • ${escapeHtml(r.created_at)}</div>
-              </div>
-              <a href="/report/${r.id}" class="report-download" target="_blank">⬇ PDF</a>
-            </div>
-          `).join("");
-          document.getElementById("reports-list").innerHTML = list;
+          const listEl = document.getElementById("reports-list");
+          listEl.innerHTML = "";
+          data.reports.forEach(r => {
+            const row = document.createElement("div");
+            row.className = "report-row";
+            const info = document.createElement("div");
+            const title = document.createElement("div");
+            title.className = "report-title";
+            title.textContent = r.title;
+            const meta = document.createElement("div");
+            meta.className = "report-meta";
+            meta.textContent = `${r.filename} • ${r.domain} • ${r.created_at}`;
+
+            const link = document.createElement("a");
+            link.href = `/report/${r.id}`;
+            link.className = "report-download";
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = "⬇ PDF";
+
+            info.appendChild(title);
+            info.appendChild(meta);
+            row.appendChild(info);
+            row.appendChild(link);
+            listEl.appendChild(row);
+          });
         } else {
           document.getElementById("reports-list").innerHTML =
             '<p class="empty-state">No reports yet. Upload your first file.</p>';
@@ -581,13 +597,19 @@
     }
 
     function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-      });
+      if (!str){
+        return '';
+      }
+      return str.replace(/[&<>"']/g, function(m) {
+      switch (m) {
+        case '&':  return '&amp;';
+        case '<':  return '&lt;';
+        case '>':  return '&gt;';
+        case '"':  return '&quot;';
+        case "'":  return '&#39;';
+        default:   return m;
+      }
+    });
     }
 
     loadUser();
