@@ -35,7 +35,10 @@ def load_file(filepath: str) -> pd.DataFrame:
     _validate_magic(filepath, ext)
 
     if ext == ".csv":
-        df = pd.read_csv(filepath, on_bad_lines='skip')
+        try:
+            df = pd.read_csv(filepath, on_bad_lines='skip')
+        except UnicodeDecodeError:
+            df = pd.read_csv(filepath, on_bad_lines='skip', encoding='latin-1')
     elif ext == ".xlsx":
         df = pd.read_excel(filepath)          # on_bad_lines not valid for excel
     elif ext == ".xls":
