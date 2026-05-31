@@ -4,11 +4,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+import matplotlib.cm as cm
 import seaborn as sns
 from config import CHARTS_PATH
 
-# Professional color palette
-PALETTE   = ["#2563eb", "#16a34a", "#dc2626", "#d97706", "#7c3aed", "#0891b2"]
+# ── Brand palette (6 canonical colors) ──────────────────────────────────────
+_BRAND_COLORS = [
+    "#2563eb", "#16a34a", "#dc2626",
+    "#d97706", "#7c3aed", "#0891b2"
+]
+
 BG_FIGURE = "#f8fafc"
 BG_AXES   = "#f1f5f9"
 GRID_COL  = "#ffffff"
@@ -17,15 +22,43 @@ TEXT_COL  = "#0f172a"
 TICK_COL  = "#475569"
 
 # ── Label rotation thresholds ────────────────────────────────────────────────
-_ROT_MILD_COUNT    = 6    # > this many labels → rotate to 45°
-_ROT_STEEP_COUNT   = 12   # > this many labels → rotate to 90°
-_ROT_MILD_LEN      = 12   # any label longer than this → rotate to 45°
-_ROT_STEEP_LEN     = 20   # any label longer than this → rotate to 90°
-_TRUNCATE_LEN      = 25   # labels longer than this are truncated with "…"
+_ROT_MILD_COUNT  = 6
+_ROT_STEEP_COUNT = 12
+_ROT_MILD_LEN    = 12
+_ROT_STEEP_LEN   = 20
+_TRUNCATE_LEN    = 25
+
+
+def get_palette(n: int) -> list:
+    """
+    Return n visually distinct hex colors.
+
+    - For n <= 6 : returns the 6 canonical brand colors (sliced to n).
+    - For n > 6  : generates n colors from matplotlib's 'tab20' colormap,
+                   which covers up to 20 distinct hues, then falls back to
+                   a linearly-spaced sample across the full colormap for n > 20.
+    - Never crashes regardless of how large n is.
+
+    Returns a list of hex strings in "#rrggbb" format.
+    """
+    if n <= 0:
+        return []
+    if n <= 6:
+        return _BRAND_COLORS[:n]
+
+    # tab20 has 20 distinct colors; for n > 20 we sample the full colormap range
+    cmap   = cm.get_cmap("tab20")
+    colors = [cmap(i / max(n - 1, 1)) for i in range(n)]
+    # Convert RGBA floats → "#rrggbb" hex strings
+    return [
+        "#{:02x}{:02x}{:02x}".format(
+            int(r * 255), int(g * 255), int(b * 255)
+        )
+        for r, g, b, _ in colors
+    ]
 
 
 def _truncate_label(label: str, maxlen: int = _TRUNCATE_LEN) -> str:
-    """Truncate a string to maxlen characters, appending '…' if cut."""
     s = str(label)
     return s if len(s) <= maxlen else s[:maxlen - 1] + "…"
 
@@ -34,15 +67,7 @@ def _fix_xaxis_labels(ax):
     """
     Inspect the current x-axis tick labels on *ax* and apply rotation /
     truncation so they never overlap.
-
-    Rules
-    -----
-    - Any label longer than _TRUNCATE_LEN chars → truncated with "…"
-    - count > _ROT_STEEP_COUNT OR any label > _ROT_STEEP_LEN chars → 90°
-    - count > _ROT_MILD_COUNT  OR any label > _ROT_MILD_LEN  chars → 45°
-    - Otherwise leave horizontal (0°)
     """
-    # Force matplotlib to render tick labels so we can inspect them
     fig = ax.get_figure()
     fig.canvas.draw()
 
@@ -50,12 +75,10 @@ def _fix_xaxis_labels(ax):
     if not labels:
         return
 
-    # Step 1 – truncate
     truncated = [_truncate_label(lbl) for lbl in labels]
     max_len   = max(len(lbl) for lbl in truncated)
     count     = len(truncated)
 
-    # Step 2 – decide rotation
     if count > _ROT_STEEP_COUNT or max_len > _ROT_STEEP_LEN:
         rotation, ha = 90, "right"
     elif count > _ROT_MILD_COUNT or max_len > _ROT_MILD_LEN:
@@ -63,7 +86,6 @@ def _fix_xaxis_labels(ax):
     else:
         rotation, ha = 0, "center"
 
-    # Step 3 – apply
     ax.set_xticklabels(truncated, rotation=rotation, ha=ha,
                        fontsize=9, color=TICK_COL)
 
@@ -84,7 +106,8 @@ def _style_axes(ax, title):
         ax.set_ylabel(ax.get_ylabel(), fontsize=10, color=TICK_COL)
 
 
-def generate_charts(df: pd.DataFrame, chart_plan: dict, report_id: str, log=None) -> list:
+def generate_charts(df: pd.DataFrame, chart_plan: dict,
+                    report_id: str, log=None) -> list:
     results = []
     for chart in chart_plan["charts"]:
         try:
@@ -124,14 +147,16 @@ def _plot(df, chart, report_id):
     fig, ax = plt.subplots(figsize=(10, 5))
     fig.patch.set_facecolor(BG_FIGURE)
 
-    # Track whether this chart has a categorical x-axis that needs label fixing
     _categorical_x = False
 
     if chart_type == "bar":
         _categorical_x = True
+        # n = number of unique values in group_by column if group_by exists, else 1
+        n = int(data[group_by].nunique()) if group_by and group_by in data.columns \
+            else max(1, int(data[x].nunique()) if x in data.columns else 1)
+        palette = get_palette(n)
         sns.barplot(data=data, x=x, y=y, hue=group_by, ax=ax,
-                    palette=PALETTE, edgecolor="white", linewidth=0.6)
-        # value labels on bars
+                    palette=palette, edgecolor="white", linewidth=0.6)
         for p in ax.patches:
             h = p.get_height()
             if h > 0:
@@ -142,39 +167,48 @@ def _plot(df, chart, report_id):
 
     elif chart_type == "line":
         _categorical_x = True
+        # n = number of unique values in group_by column if group_by exists, else 1
+        n = int(data[group_by].nunique()) if group_by and group_by in data.columns else 1
+        palette = get_palette(n)
         sns.lineplot(data=data, x=x, y=y, hue=group_by, ax=ax,
-                     palette=PALETTE, linewidth=2.5, markers=True)
-        ax.fill_between(data[x], data[y], alpha=0.08, color=PALETTE[0])
+                     palette=palette, linewidth=2.5, markers=True)
+        ax.fill_between(data[x], data[y], alpha=0.08, color=palette[0])
 
     elif chart_type == "scatter":
-        # scatter uses numeric axes — no label rotation needed
+        # n = number of unique hue categories if group_by exists, else 1
+        n = int(data[group_by].nunique()) if group_by and group_by in data.columns else 1
+        palette = get_palette(n)
         sns.scatterplot(data=data, x=x, y=y, hue=group_by, ax=ax,
-                        palette=PALETTE, s=60, alpha=0.75, edgecolor="white")
+                        palette=palette, s=60, alpha=0.75, edgecolor="white")
 
     elif chart_type == "histogram":
-        # histogram x-axis is numeric
+        # always n = 1 for histogram
+        palette = get_palette(1)
         sns.histplot(data=data, x=x, ax=ax,
-                     color=PALETTE[0], edgecolor="white", linewidth=0.5)
+                     color=palette[0], edgecolor="white", linewidth=0.5)
 
     elif chart_type == "pie":
         counts = data[y] if y else data[x].value_counts()
         labels = data[x] if y else data[x].value_counts().index
-        # Truncate pie labels too, for safety
         labels = [_truncate_label(str(lbl)) for lbl in labels]
+        # n = number of slices being plotted
+        n = len(counts)
+        palette = get_palette(n)
         wedge_props = {"edgecolor": "white", "linewidth": 2}
         ax.pie(counts, labels=labels, autopct="%1.1f%%",
-               colors=PALETTE[:len(counts)], wedgeprops=wedge_props,
+               colors=palette, wedgeprops=wedge_props,
                textprops={"fontsize": 9, "color": TEXT_COL})
 
     elif chart_type == "box":
         _categorical_x = True
+        # n = number of unique values in x_column
+        n = int(data[x].nunique()) if x in data.columns else 1
+        palette = get_palette(n)
         sns.boxplot(data=data, x=x, y=y, ax=ax,
-                    palette=PALETTE, linewidth=1.2, fliersize=4)
+                    palette=palette, linewidth=1.2, fliersize=4)
 
-    # Apply standard axis styling first
     _style_axes(ax, title)
 
-    # ── Change 1: fix x-axis labels for categorical chart types ──────────────
     if _categorical_x:
         _fix_xaxis_labels(ax)
 
