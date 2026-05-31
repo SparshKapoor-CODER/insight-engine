@@ -187,7 +187,7 @@ def upload():
 
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
-            
+
         log(f"PDF built: {pdf_path}")
 
         # Save report record to DB
@@ -197,7 +197,8 @@ def upload():
             filename = safe_name,
             title    = plan.get("report_title", "Report"),
             domain   = plan.get("domain", "unknown"),
-            status   = "completed"
+            status   = "completed",
+            pdf_data = pdf_bytes
         )
         db.session.add(report)
         db.session.commit()
