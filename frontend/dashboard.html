@@ -176,7 +176,7 @@
       transition: width 0.4s var(--ease);
     }
 
-    /* Upload card – matches index.html exactly */
+    /* Upload card */
     .dashboard-upload-card {
       background: var(--surface);
       border-radius: var(--radius-xl);
@@ -198,6 +198,121 @@
       color: var(--ink-2);
       font-size: 0.9rem;
       margin-bottom: 24px;
+    }
+
+    /* ── Branding fields ──────────────────────────────────────────────────── */
+    .branding-fields {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      margin-top: 16px;
+      margin-bottom: 0;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--ink-2);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .field-input {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      width: 100%;
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      outline: none;
+    }
+
+    .field-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(26, 107, 92, 0.08);
+    }
+
+    .field-input::placeholder {
+      color: var(--ink-3);
+    }
+
+    .color-field-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
+    .color-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Color picker — styled swatch */
+    .color-swatch-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    }
+
+    .color-swatch-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(26, 107, 92, 0.08);
+    }
+
+    .color-swatch-btn input[type="color"] {
+      position: absolute;
+      inset: -4px;
+      width: calc(100% + 8px);
+      height: calc(100% + 8px);
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      opacity: 0;
+    }
+
+    .color-swatch-preview {
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+    }
+
+    .color-hex-display {
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: var(--ink-2);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      letter-spacing: 0.04em;
+      min-width: 80px;
+    }
+
+    .branding-hint {
+      font-size: 0.73rem;
+      color: var(--ink-3);
+      margin-top: 4px;
+      display: block;
     }
 
     /* Past reports card */
@@ -280,12 +395,12 @@
         border-top: none;
       }
       .main-content { padding: 24px; }
+      .branding-fields { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Ambient background orbs (same as index.html) -->
   <div class="bg-orb bg-orb--1" aria-hidden="true"></div>
   <div class="bg-orb bg-orb--2" aria-hidden="true"></div>
   <div class="bg-orb bg-orb--3" aria-hidden="true"></div>
@@ -335,12 +450,15 @@
         </div>
       </div>
 
-      <!-- Upload card (identical to index.html's upload panel) -->
+      <!-- Upload card -->
       <div class="dashboard-upload-card">
         <h2>Generate New Report</h2>
         <p>Upload a CSV or Excel file and get a full AI‑generated PDF analysis report.</p>
 
-        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Drag and drop your file here, or press Enter to browse" aria-describedby="dropzone-hint">
+        <!-- Dropzone -->
+        <div class="dropzone" id="dropzone" role="button" tabindex="0"
+             aria-label="Drag and drop your file here, or press Enter to browse"
+             aria-describedby="dropzone-hint">
           <div class="dropzone-inner">
             <div class="dropzone-icon" aria-hidden="true">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -354,6 +472,45 @@
           </div>
           <input type="file" id="fileInput" accept=".csv,.xlsx" hidden aria-hidden="true" />
         </div>
+
+        <!-- ── Branding fields (below dropzone, above Generate button) ────── -->
+        <div class="branding-fields" role="group" aria-label="Optional report branding">
+
+          <!-- Company name -->
+          <div class="field-group">
+            <label class="field-label" for="companyName">Company name</label>
+            <input
+              type="text"
+              id="companyName"
+              class="field-input"
+              placeholder="Company name (optional)"
+              maxlength="80"
+              autocomplete="organization"
+            />
+            <span class="branding-hint">Appears on the cover page and client summary.</span>
+          </div>
+
+          <!-- Brand color -->
+          <div class="color-field-wrap">
+            <span class="field-label" id="brand-color-label">Brand color</span>
+            <div class="color-input-row" role="group" aria-labelledby="brand-color-label">
+              <div class="color-swatch-btn" title="Pick brand color" aria-label="Brand color picker">
+                <div class="color-swatch-preview" id="colorSwatchPreview" style="background:#2563eb;"></div>
+                <input
+                  type="color"
+                  id="brandColor"
+                  value="#2563eb"
+                  aria-label="Brand color"
+                />
+              </div>
+              <span class="color-hex-display" id="colorHexDisplay">#2563eb</span>
+            </div>
+            <span class="branding-hint">Used for headings, borders &amp; cover.</span>
+          </div>
+        </div>
+        <!-- ── End branding fields ────────────────────────────────────────── -->
+
+        <div style="margin-top: 20px;"></div>
 
         <button id="uploadBtn" class="generate-btn" disabled aria-disabled="true">
           <span class="btn-text">Generate Report</span>
@@ -385,20 +542,23 @@
   </div>
 
   <script>
-    // ── Load user info and past reports ──────────────────────────────────
+    // ── Load user info and past reports ────────────────────────────────────
     async function loadUser() {
       try {
-        const res = await fetch("/api/me");
+        const res  = await fetch("/api/me");
         const data = await res.json();
 
-        document.getElementById("user-name").textContent = data.name;
-        document.getElementById("user-tier").textContent = data.tier.toUpperCase();
-        document.getElementById("user-avatar").src = data.avatar_url || "https://ui-avatars.com/api/?background=1a6b5c&color=fff&name=" + encodeURIComponent(data.name);
+        document.getElementById("user-name").textContent  = data.name;
+        document.getElementById("user-tier").textContent  = data.tier.toUpperCase();
+        document.getElementById("user-avatar").src        =
+          data.avatar_url ||
+          "https://ui-avatars.com/api/?background=1a6b5c&color=fff&name=" +
+          encodeURIComponent(data.name);
 
-        const used = data.usage.used;
+        const used  = data.usage.used;
         const limit = data.usage.limit;
-        document.getElementById("usage-text").textContent = `${used} / ${limit} reports used this month`;
-        document.getElementById("usage-fill").style.width = `${Math.min((used / limit) * 100, 100)}%`;
+        document.getElementById("usage-text").textContent    = `${used} / ${limit} reports used this month`;
+        document.getElementById("usage-fill").style.width    = `${Math.min((used / limit) * 100, 100)}%`;
 
         if (data.reports && data.reports.length > 0) {
           const list = data.reports.map(r => `
@@ -412,7 +572,8 @@
           `).join("");
           document.getElementById("reports-list").innerHTML = list;
         } else {
-          document.getElementById("reports-list").innerHTML = '<p class="empty-state">No reports yet. Upload your first file.</p>';
+          document.getElementById("reports-list").innerHTML =
+            '<p class="empty-state">No reports yet. Upload your first file.</p>';
         }
       } catch (err) {
         console.error("Failed to load user data", err);
@@ -431,7 +592,18 @@
 
     loadUser();
 
-    // ── Upload flow (identical to index.html) ─────────────────────────────
+    // ── Brand color picker ────────────────────────────────────────────────
+    const brandColorInput   = document.getElementById("brandColor");
+    const colorSwatchPrev   = document.getElementById("colorSwatchPreview");
+    const colorHexDisplay   = document.getElementById("colorHexDisplay");
+
+    brandColorInput.addEventListener("input", () => {
+      const val = brandColorInput.value;
+      colorSwatchPrev.style.background = val;
+      colorHexDisplay.textContent      = val;
+    });
+
+    // ── Upload flow ───────────────────────────────────────────────────────
     const dropzone     = document.getElementById("dropzone");
     const fileInput    = document.getElementById("fileInput");
     const uploadBtn    = document.getElementById("uploadBtn");
@@ -439,6 +611,7 @@
     const downloadSec  = document.getElementById("download-section");
     const downloadBtn  = document.getElementById("download-btn");
     const dropzoneText = document.getElementById("dropzone-text");
+    const companyInput = document.getElementById("companyName");
     let selectedFile   = null;
 
     dropzone.addEventListener("click", () => fileInput.click());
@@ -446,11 +619,8 @@
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); }
     });
 
-    dropzone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropzone.classList.add("drag-over");
-    });
-    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+    dropzone.addEventListener("dragover",  (e) => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+    dropzone.addEventListener("dragleave", ()  => dropzone.classList.remove("drag-over"));
     dropzone.addEventListener("drop", (e) => {
       e.preventDefault();
       dropzone.classList.remove("drag-over");
@@ -464,22 +634,22 @@
     });
 
     function setFile(f) {
-      selectedFile = f;
+      selectedFile             = f;
       dropzoneText.textContent = f.name;
       dropzone.classList.add("file-selected");
       uploadBtn.disabled = false;
       uploadBtn.setAttribute("aria-disabled", "false");
       downloadSec.style.display = "none";
-      statusDiv.textContent = "";
-      statusDiv.className = "status-message";
+      statusDiv.textContent     = "";
+      statusDiv.className       = "status-message";
     }
 
     uploadBtn.addEventListener("click", async () => {
       if (!selectedFile) return;
 
       statusDiv.textContent = "Analysing your data… this may take a minute.";
-      statusDiv.className = "status-message status--loading";
-      uploadBtn.disabled = true;
+      statusDiv.className   = "status-message status--loading";
+      uploadBtn.disabled    = true;
       uploadBtn.setAttribute("aria-disabled", "true");
       uploadBtn.classList.add("is-loading");
       downloadSec.style.display = "none";
@@ -487,30 +657,36 @@
       const formData = new FormData();
       formData.append("file", selectedFile);
 
+      // ── Append branding fields ─────────────────────────────────────────
+      const companyVal = companyInput.value.trim();
+      if (companyVal) {
+        formData.append("company_name", companyVal);
+      }
+      formData.append("brand_color", brandColorInput.value);
+
       try {
-        const res = await fetch("/upload", { method: "POST", body: formData });
+        const res  = await fetch("/upload", { method: "POST", body: formData });
         const data = await res.json();
 
         uploadBtn.classList.remove("is-loading");
 
         if (data.report_url) {
           statusDiv.textContent = "✓ Report ready!";
-          statusDiv.className = "status-message status--success";
-          downloadBtn.href = data.report_url;
+          statusDiv.className   = "status-message status--success";
+          downloadBtn.href      = data.report_url;
           downloadSec.style.display = "block";
-          // Refresh user data to update usage and past reports
           loadUser();
         } else {
-          statusDiv.textContent = "Error: " + (data.error || data.message || "Unknown error.");
-          statusDiv.className = "status-message status--error";
-          uploadBtn.disabled = false;
+          statusDiv.textContent = "Error: " + (data.message || data.error || "Unknown error.");
+          statusDiv.className   = "status-message status--error";
+          uploadBtn.disabled    = false;
           uploadBtn.setAttribute("aria-disabled", "false");
         }
       } catch (err) {
         uploadBtn.classList.remove("is-loading");
         statusDiv.textContent = "Something went wrong. Is the server running?";
-        statusDiv.className = "status-message status--error";
-        uploadBtn.disabled = false;
+        statusDiv.className   = "status-message status--error";
+        uploadBtn.disabled    = false;
         uploadBtn.setAttribute("aria-disabled", "false");
       }
     });
