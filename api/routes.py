@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import glob
 import uuid
 from flask import Blueprint, request, jsonify, send_file, send_from_directory
@@ -17,6 +18,9 @@ from core.narrator import narrate
 from core.report_builder import build
 
 router = Blueprint("router", __name__)
+
+# Allowed hex color pattern
+_HEX_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
 
 
 # ── Error helper ──────────────────────────────────────────────────────────────
@@ -131,12 +135,26 @@ def upload():
     if file.filename == "":
         return _error("EMPTY_FILENAME", "Uploaded file has no name.", status=400)
 
+    # ── Read optional branding fields from form data ─────────────────────────
+    company_name    = request.form.get("company_name", "Client").strip() or "Client"
+    brand_color_raw = request.form.get("brand_color", "#2563eb").strip()
+
+    # Validate hex color — reject if present but malformed
+    if brand_color_raw and not _HEX_RE.match(brand_color_raw):
+        return _error(
+            "INVALID_BRAND_COLOR",
+            "brand_color must be a valid hex color in the format #rrggbb (e.g. #2563eb).",
+            status=400
+        )
+    brand_color_hex = brand_color_raw if brand_color_raw else "#2563eb"
+
     report_id = str(uuid.uuid4())[:8]
     log       = get_logger(report_id)
     filepath  = None
 
     log(f"Report {report_id} started by user {current_user.email}.")
     log(f"File received: {file.filename}")
+    log(f"Company: '{company_name}' | Brand color: '{brand_color_hex}'")
 
     safe_name = secure_filename(file.filename)
     filename  = f"{report_id}_{safe_name}"
@@ -159,7 +177,13 @@ def upload():
 
         charts   = generate_charts(df, plan, report_id, log)
         stories  = narrate(charts, log)
-        pdf_path = build(charts, stories, plan, report_id)
+
+        # Pass company_name and brand_color_hex into build()
+        pdf_path = build(
+            charts, stories, plan, report_id,
+            company_name=company_name,
+            brand_color_hex=brand_color_hex,
+        )
         log(f"PDF built: {pdf_path}")
 
         # Save report record to DB
@@ -210,12 +234,10 @@ def get_report(report_id):
     if not report_id.isalnum():
         return _error("INVALID_ID", "Invalid report ID.", status=400)
 
-    # Verify this report belongs to the current user
     report = Report.query.filter_by(id=report_id, user_id=current_user.id).first()
     if not report:
         return _error("NOT_FOUND", "Report not found.", status=404)
 
-    # Change 4: try disk first (fast cache), fall back to DB BLOB
     disk_path = os.path.join(REPORTS_PATH, f"{report_id}.pdf")
 
     if os.path.exists(disk_path):
@@ -223,7 +245,6 @@ def get_report(report_id):
                          download_name=f"{report_id}.pdf",
                          mimetype="application/pdf")
 
-    # Disk file missing (e.g. after a dyno restart) — serve from DB BLOB
     if report.pdf_data:
         return send_file(
             io.BytesIO(report.pdf_data),
@@ -243,7 +264,6 @@ def get_log(report_id):
     if not report_id.isalnum():
         return _error("INVALID_ID", "Invalid report ID.", status=400)
 
-    # Only show logs for reports belonging to current user
     report = Report.query.filter_by(id=report_id, user_id=current_user.id).first()
     if not report:
         return _error("NOT_FOUND", "Log not found.", status=404)
