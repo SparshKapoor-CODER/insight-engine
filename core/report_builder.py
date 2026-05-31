@@ -759,24 +759,6 @@ def _client_summary_page(story: list, plan: dict, styles: dict,
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# DB persistence
-# ══════════════════════════════════════════════════════════════════════════════
-
-def store_pdf_in_db(report_id: str, pdf_path: str) -> None:
-    """Store PDF bytes as BLOB on the Report row. Deferred import avoids circular imports."""
-    try:
-        from models.database import db, Report
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-        report = Report.query.get(report_id)
-        if report:
-            report.pdf_data = pdf_bytes
-            db.session.commit()
-    except Exception as e:
-        print(f"WARNING: Could not store PDF BLOB for {report_id}: {e}")
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 # Public entry point
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -841,5 +823,4 @@ def build(
     )
     doc.build(story, onFirstPage=first_page_cb, onLaterPages=later_pages_cb)
 
-    store_pdf_in_db(report_id, output_path)
     return output_path

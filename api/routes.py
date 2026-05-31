@@ -184,6 +184,10 @@ def upload():
             company_name=company_name,
             brand_color_hex=brand_color_hex,
         )
+
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+            
         log(f"PDF built: {pdf_path}")
 
         # Save report record to DB
