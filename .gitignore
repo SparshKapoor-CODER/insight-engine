@@ -8,3 +8,7 @@ __pycache__/
 *.log
 *.zip
 *.csv
+*.js
+*.pptx
+*.json
+node_modules/
