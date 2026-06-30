@@ -1,10 +1,8 @@
 # Insight Engine 🔍
 
 An automated data storytelling engine. Upload a raw CSV or Excel file and get a fully generated PDF report with charts, insights, and business narration — no analyst needed.
-
-[![Live Demo](https://img.shields.io/badge/Live_Demo-View_App-00C7B7?style=for-the-badge&logo=render)]([[https://agribuddy2-0.onrender.com/](https://insight-engine-mu0i.onrender.com/)](https://insight-engine-mu0i.onrender.com/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-View_App-00C7B7?style=for-the-badge&logo=render)](https://insight-engine-mu0i.onrender.com/)
 [![GitHub Code](https://img.shields.io/badge/GitHub-View_Code-181717?style=for-the-badge&logo=github)](https://github.com/SparshKapoor-CODER/insight-engine)
-
 ---
 
 ## What it does
