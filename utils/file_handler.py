@@ -25,7 +25,12 @@ def _validate_magic(filepath: str, ext: str) -> None:
         )
 
 
-def load_file(filepath: str) -> pd.DataFrame:
+def load_file(filepath: str, max_rows: int = None) -> pd.DataFrame:
+    """
+    max_rows: caller-supplied cap (e.g. the current user's tier limit).
+    Falls back to the global config.MAX_ROWS if not provided, so existing
+    callers that don't pass it keep the old behaviour.
+    """
     ext = os.path.splitext(filepath)[1].lower()
 
     if ext not in ALLOWED_EXTENSIONS:
@@ -44,10 +49,12 @@ def load_file(filepath: str) -> pd.DataFrame:
     elif ext == ".xls":
         df = pd.read_excel(filepath, engine="xlrd")
 
-    if len(df) > MAX_ROWS:
+    effective_max_rows = MAX_ROWS if max_rows is None else min(max_rows, MAX_ROWS)
+
+    if len(df) > effective_max_rows:
         raise ValueError(
-            f"Dataset exceeds the {MAX_ROWS} row limit. "
-            f"Got {len(df):,} rows. Please upload a smaller file."
+            f"Dataset exceeds the {effective_max_rows} row limit for your plan. "
+            f"Got {len(df):,} rows. Please upload a smaller file or upgrade your plan."
         )
 
     return df

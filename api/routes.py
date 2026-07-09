@@ -97,6 +97,7 @@ def me():
             "used":  used,
             "limit": limits["reports_per_month"]
         },
+        "max_rows": limits["max_rows"],
         "reports": [{
             "id":         r.id,
             "filename":   r.filename,
@@ -162,7 +163,7 @@ def upload():
     file.save(filepath)
 
     try:
-        df = load_file(filepath)
+        df = load_file(filepath, max_rows=limits["max_rows"])
         log(f"File loaded. Shape: {df.shape[0]} rows x {df.shape[1]} columns.")
 
         df = clean(df)
