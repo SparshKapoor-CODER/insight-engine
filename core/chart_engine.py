@@ -4,7 +4,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-import matplotlib.cm as cm
 import seaborn as sns
 from config import CHARTS_PATH
 
@@ -47,7 +46,7 @@ def get_palette(n: int) -> list:
         return _BRAND_COLORS[:n]
 
     # tab20 has 20 distinct colors; for n > 20 we sample the full colormap range
-    cmap   = cm.get_cmap("tab20")
+    cmap   = matplotlib.colormaps["tab20"]
     colors = [cmap(i / max(n - 1, 1)) for i in range(n)]
     # Convert RGBA floats → "#rrggbb" hex strings
     return [
