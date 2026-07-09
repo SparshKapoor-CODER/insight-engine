@@ -6,6 +6,7 @@ import uuid
 from flask import Blueprint, request, jsonify, send_file, send_from_directory
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
+from markupsafe import escape
 from config import UPLOAD_PATH, CHARTS_PATH, TIER_LIMITS
 from models.database import db, Report
 from utils.file_handler import load_file
@@ -280,4 +281,4 @@ def get_log(report_id):
 
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
-    return f"<pre style='font-family:monospace;padding:24px;'>{content}</pre>", 200
+    return f"<pre style='font-family:monospace;padding:24px;'>{escape(content)}</pre>", 200
