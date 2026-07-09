@@ -15,8 +15,9 @@ from utils.logger import get_logger
 from core.profiler import profile
 from core.llm_analyst import analyse
 from core.chart_engine import generate_charts
-from core.narrator import narrate
+from core.narrator import narrate, generate_insight
 from core.report_builder import build
+from utils.cache import hash_dataframe, get_cached_analysis, save_analysis_cache
 
 router = Blueprint("router", __name__)
 
@@ -170,15 +171,39 @@ def upload():
         df = clean(df)
         log(f"Data cleaned. Shape: {df.shape[0]} rows x {df.shape[1]} columns.")
 
-        prof = profile(df)
-        log(f"Dataset profiled. Columns: {', '.join(prof['columns'])}")
+        data_hash = hash_dataframe(df)
+        cached    = get_cached_analysis(data_hash)
 
-        plan = analyse(prof)
+        if cached:
+            log(f"Cache HIT (hash {data_hash[:8]}...). Skipping LLM analysis.")
+            plan = cached["plan"]
+        else:
+            log(f"Cache MISS (hash {data_hash[:8]}...). Running LLM analysis.")
+            prof = profile(df)
+            log(f"Dataset profiled. Columns: {', '.join(prof['columns'])}")
+            plan = analyse(prof)
+
         log(f"LLM domain: '{plan['domain']}' | Title: '{plan['report_title']}'")
         log(f"Charts: {', '.join([c['title'] for c in plan['charts']])}")
 
-        charts   = generate_charts(df, plan, report_id, log)
-        stories  = narrate(charts, log)
+        charts = generate_charts(df, plan, report_id, log)
+
+        if cached:
+            # Match cached insights to this run's charts by chart_id. A
+            # mismatch (e.g. a chart that rendered here but wasn't in the
+            # cached run) is narrated on demand rather than left blank.
+            cached_by_id = {s["chart_id"]: s["insight_text"] for s in cached["stories"]}
+            stories = []
+            for c in charts:
+                if c["chart_id"] in cached_by_id:
+                    stories.append({"chart_id": c["chart_id"], "insight_text": cached_by_id[c["chart_id"]]})
+                else:
+                    log(f"No cached narration for '{c['chart_id']}', generating on demand.")
+                    stories.append({"chart_id": c["chart_id"], "insight_text": generate_insight(c)})
+        else:
+            stories = narrate(charts, log)
+            save_analysis_cache(data_hash, plan, stories)
+            log(f"Cached analysis + narration under hash {data_hash[:8]}...")
 
         # Pass company_name and brand_color_hex into build()
         pdf_path = build(

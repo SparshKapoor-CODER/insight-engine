@@ -60,6 +60,11 @@ Additional rules:
     return _call_groq_narrator(prompt)
 
 
+def generate_insight(chart: dict) -> str:
+    """Public entry point to narrate a single chart (used for cache-miss fallback)."""
+    return _get_insight(chart)
+
+
 def narrate(chart_results: list, log=None) -> list:
     if log:
         log(f"Narrating {len(chart_results)} charts in parallel (max 4 workers).")

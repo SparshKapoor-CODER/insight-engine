@@ -59,3 +59,17 @@ class Report(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     # Change 4: persist PDF bytes in the DB so reports survive dyno restarts
     pdf_data   = db.Column(db.LargeBinary, nullable=True)
+
+
+class AnalysisCache(db.Model):
+    __tablename__ = "analysis_cache"
+
+    # sha256 hex digest of the CLEANED dataframe (post data_cleaner.clean()),
+    # not the raw upload — so re-uploads of logically-identical data
+    # (whitespace, filename, row order aside) hit the same cache entry.
+    data_hash      = db.Column(db.String(64), primary_key=True)
+    analysis_json  = db.Column(db.Text, nullable=False)   # llm_analyst.analyse() output
+    narration_json = db.Column(db.Text, nullable=False)   # narrator.narrate() output
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    # Note: this cache is intentionally shared across users, not per-user —
+    # two different users uploading identical data reuse the same LLM output.
