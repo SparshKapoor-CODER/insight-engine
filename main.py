@@ -17,6 +17,16 @@ app.secret_key                          = SECRET_KEY
 app.config["MAX_CONTENT_LENGTH"]        = 10 * 1024 * 1024   # 10MB
 app.config["SQLALCHEMY_DATABASE_URI"]   = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# pool_pre_ping: issue a cheap "is this connection alive" check before
+# handing a pooled connection to a request, instead of finding out mid-query
+# (e.g. "SSL SYSCALL error: EOF detected" when Render/network drops an idle
+# connection the pool didn't know about). pool_recycle: proactively discard
+# connections older than 280s so we recycle before Render's own idle timeout
+# kills them from its side.
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle":  280,
+}
 
 # OAuth over HTTP for local dev only
 if DEBUG:
