@@ -3,7 +3,17 @@ from groq import Groq, APIStatusError, APITimeoutError
 from config import GROQ_API_KEY, MODEL_NAME
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-client = Groq(api_key=GROQ_API_KEY)
+# Lazy singleton — see llm_analyst.py for the same pattern and rationale:
+# keeps this module importable without GROQ_API_KEY set, e.g. in tests
+# that never actually call the API.
+_client = None
+
+
+def _get_client() -> Groq:
+    global _client
+    if _client is None:
+        _client = Groq(api_key=GROQ_API_KEY)
+    return _client
 
 
 @retry(
@@ -12,7 +22,7 @@ client = Groq(api_key=GROQ_API_KEY)
     retry=retry_if_exception_type((APIStatusError, APITimeoutError))
 )
 def _call_groq_narrator(prompt: str) -> str:
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=850,

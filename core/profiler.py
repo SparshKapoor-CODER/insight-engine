@@ -28,7 +28,7 @@ def profile(df: pd.DataFrame) -> dict:
     # Change 2: also compute avg_label_length over the top-10 most frequent
     # values so the LLM prompt can guard against long-string bar/line charts.
     result["cardinality"] = {}
-    for col in df.select_dtypes(include="object").columns:
+    for col in df.select_dtypes(include=["object", "str"]).columns:
         unique_count = df[col].nunique()
         top_values   = df[col].value_counts().head(10)   # top-10 for avg length
 

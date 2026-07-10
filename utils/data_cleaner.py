@@ -21,7 +21,7 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
 
     # ── 2. Strip whitespace from string cell values (MUST run before profiling)
     #       This ensures avg_label_length in profiler.py is based on clean text.
-    for col in df.select_dtypes(include="object").columns:
+    for col in df.select_dtypes(include=["object", "str"]).columns:
         df[col] = df[col].str.strip()
 
     # ── 3. Try to parse date/time columns automatically ──────────────────────

@@ -8,6 +8,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from markupsafe import escape
 from config import UPLOAD_PATH, CHARTS_PATH, TIER_LIMITS
+from extensions import limiter
 from models.database import db, Report
 from utils.file_handler import load_file
 from utils.data_cleaner import clean
@@ -119,6 +120,7 @@ def health():
 # ── Upload route ───────────────────────────────────────────────────────────────
 @router.route("/upload", methods=["POST"])
 @login_required
+@limiter.limit("5 per minute")
 def upload():
     # Check usage quota
     limits = TIER_LIMITS[current_user.tier]

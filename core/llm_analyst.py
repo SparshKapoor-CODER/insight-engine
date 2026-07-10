@@ -3,7 +3,18 @@ from groq import Groq, APIStatusError, APITimeoutError
 from config import GROQ_API_KEY, MODEL_NAME, MAX_CHARTS
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-client = Groq(api_key=GROQ_API_KEY)
+# Lazy singleton: constructed on first real use, not at import time.
+# Keeps `from core.llm_analyst import _validate_plan` (and anything else
+# in this module) importable without GROQ_API_KEY set — e.g. in tests
+# that never actually call the API.
+_client = None
+
+
+def _get_client() -> Groq:
+    global _client
+    if _client is None:
+        _client = Groq(api_key=GROQ_API_KEY)
+    return _client
 
 
 def build_prompt(profile: dict) -> str:
@@ -96,7 +107,7 @@ Return ONLY a valid JSON object. No explanation. No markdown. No backticks.
     retry=retry_if_exception_type((APIStatusError, APITimeoutError, json.JSONDecodeError))
 )
 def _call_groq_analyse(prompt: str) -> str:
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=3000,

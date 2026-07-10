@@ -5,6 +5,7 @@ from models.database import db, User
 from api.routes import router
 from api.auth import auth, google_bp, github_bp
 from config import DEBUG, BASE_DIR, SECRET_KEY, DATABASE_URL
+from extensions import limiter
 
 # ── Create storage folders ────────────────────────────────────────────────────
 for folder in ["uploads", "charts", "reports", "logs"]:
@@ -23,6 +24,7 @@ if DEBUG:
 
 # ── Extensions ────────────────────────────────────────────────────────────────
 db.init_app(app)
+limiter.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
