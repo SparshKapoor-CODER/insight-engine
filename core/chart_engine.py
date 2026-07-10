@@ -85,6 +85,7 @@ def _fix_xaxis_labels(ax):
     else:
         rotation, ha = 0, "center"
 
+    ax.set_xticks(ax.get_xticks())  # lock positions before relabeling
     ax.set_xticklabels(truncated, rotation=rotation, ha=ha,
                        fontsize=9, color=TICK_COL)
 
@@ -154,8 +155,14 @@ def _plot(df, chart, report_id):
         n = int(data[group_by].nunique()) if group_by and group_by in data.columns \
             else max(1, int(data[x].nunique()) if x in data.columns else 1)
         palette = get_palette(n)
-        sns.barplot(data=data, x=x, y=y, hue=group_by, ax=ax,
-                    palette=palette, edgecolor="white", linewidth=0.6)
+        if group_by:
+            sns.barplot(data=data, x=x, y=y, hue=group_by, ax=ax,
+                        palette=palette, edgecolor="white", linewidth=0.6)
+        else:
+            # No group_by: color each bar by x itself instead of passing
+            # palette with hue=None (deprecated, removed in seaborn 0.14)
+            sns.barplot(data=data, x=x, y=y, hue=x, legend=False, ax=ax,
+                        palette=palette, edgecolor="white", linewidth=0.6)
         for p in ax.patches:
             h = p.get_height()
             if h > 0:
@@ -169,16 +176,27 @@ def _plot(df, chart, report_id):
         # n = number of unique values in group_by column if group_by exists, else 1
         n = int(data[group_by].nunique()) if group_by and group_by in data.columns else 1
         palette = get_palette(n)
-        sns.lineplot(data=data, x=x, y=y, hue=group_by, ax=ax,
-                     palette=palette, linewidth=2.5, markers=True)
+        if group_by:
+            sns.lineplot(data=data, x=x, y=y, hue=group_by, ax=ax,
+                         palette=palette, linewidth=2.5, markers=True)
+        else:
+            # Single series: a plain color avoids the palette-without-hue
+            # deprecation without hue=x, which would incorrectly split a
+            # continuous line into disconnected per-category segments.
+            sns.lineplot(data=data, x=x, y=y, ax=ax,
+                         color=palette[0], linewidth=2.5, markers=True)
         ax.fill_between(data[x], data[y], alpha=0.08, color=palette[0])
 
     elif chart_type == "scatter":
         # n = number of unique hue categories if group_by exists, else 1
         n = int(data[group_by].nunique()) if group_by and group_by in data.columns else 1
         palette = get_palette(n)
-        sns.scatterplot(data=data, x=x, y=y, hue=group_by, ax=ax,
-                        palette=palette, s=60, alpha=0.75, edgecolor="white")
+        if group_by:
+            sns.scatterplot(data=data, x=x, y=y, hue=group_by, ax=ax,
+                            palette=palette, s=60, alpha=0.75, edgecolor="white")
+        else:
+            sns.scatterplot(data=data, x=x, y=y, ax=ax,
+                            color=palette[0], s=60, alpha=0.75, edgecolor="white")
 
     elif chart_type == "histogram":
         # always n = 1 for histogram
@@ -203,7 +221,7 @@ def _plot(df, chart, report_id):
         # n = number of unique values in x_column
         n = int(data[x].nunique()) if x in data.columns else 1
         palette = get_palette(n)
-        sns.boxplot(data=data, x=x, y=y, ax=ax,
+        sns.boxplot(data=data, x=x, y=y, hue=x, legend=False, ax=ax,
                     palette=palette, linewidth=1.2, fliersize=4)
 
     _style_axes(ax, title)
